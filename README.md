@@ -1,44 +1,55 @@
-# Growth Tracker: The System (v3)
+# Growth Tracker (v4)
 
-A Solo Leveling-style daily growth tracker. You are a hunter, your habits are quests, and your wins,
-failures, pain and consistency are all recorded. v3 adds **real accounts**, **role-based access (hunter and
-admin)** and a full visual redesign.
+A daily growth tracker for everyone. Turn your habits into quests (or keep them as plain habits), build streaks,
+beat a weekly boss, take a daily dare, and watch your level rise. It started as a Solo Leveling-style game and
+now has two looks, so it works just as well for people who don't care for games.
 
 FastAPI + SQLAlchemy (SQLite locally, MySQL in production) and React (Vite). Every reward is virtual.
 
-## What's new in v3
+## What's new in v4
 
-- **Accounts.** Register and sign in. Every hunter has their own quests, history, journal, coins and shop items.
-- **RBAC.** Two roles, enforced on the server (never just hidden in the UI).
-  - *Hunter*: sees only their own data.
-  - *Admin*: opens the **Console** to see how the product is used: sign-ups, active users, funnel, rank
-    distribution, and per-hunter account facts and progress numbers. Admins can disable, sign out, promote or
-    delete accounts. **Admins never see journal text, quest names or passwords**, and every admin action is
-    written to an append-only **audit log**.
-- **Onboarding.** Pick a quest template (Exam + AI Engineer, Deep focus, Blank) and your own plan window.
-- **New design.** A dark "Void" look with a violet accent, a live **Gate** ring that fills as you clear quests,
-  rank emblems, a "Gate cleared" celebration, light "Daylight" mode, a command palette (Ctrl/Cmd+K),
-  mobile tab bar, and five unlockable accent themes in the Shop.
+- **A fresh look.** The navy theme is gone. The default is "Daylight": soft warm white with a green accent,
+  and a warm charcoal "Night" mode. Seven unlockable colour themes (Sprout, Ocean, Coral, Plum, Blossom,
+  Marigold, Ink), all contrast-checked.
+- **Two styles, one app.** *Adventure* keeps the game feel (quests, ranks, bosses, shadow soldiers).
+  *Calm* uses plain words (habits, tiers, goals), softer shapes and a friendlier typeface. Switch any time from the
+  top bar, Profile, or the sign-in screen. Everything underneath (points, streaks, coins) is the same.
+- **Easy to read for any age.** Larger base text, three text sizes (Standard, Large, Extra large), strong
+  contrast, big tap targets, and a clear focus ring for keyboard users.
+- **Real challenge.**
+  - **Daily Dare**: one small real-life challenge per day (36 of them, from "eat one meal without your
+    phone" to "write a thank-you note"). +15 XP and +5 coins. Optional, never breaks a streak.
+  - **Weekly Boss**: clear 80% of the week's habits to defeat it. +50 XP and +40 coins, once per week.
+    In Calm style it is a "Weekly goal" with a plain progress bar.
+  - **19 milestones** (6 new: first dare, 10 and 30 dares, first and fourth boss, 10 perfect days, a fortnight streak).
+- **The Hall.** An optional weekly leaderboard for friends. It is **off by default**. Joining shares only your
+  name, avatar, level, streak and this week's points. Quests, journal and coins stay private, and you can leave any time.
+- **Avatars.** Twelve icons to pick from, shown next to your name.
+- **More starting plans.** Wellbeing (default), Student, Exam + AI Engineer, Deep focus, Blank.
+- **Accounts, RBAC and the admin overview** from v3 are unchanged. Admins still see only account facts and totals.
 
 ## Screens
 
 | Screen | What it does |
 |---|---|
-| Today | The day's quests with time blocks, the Gate ring, next-up card, streak-at-risk warning, daily log |
+| Today | Greeting, the Gate ring, Weekly Boss, Daily Dare, the day's tasks with time blocks, next-up card, daily log |
 | Calendar | Month grid coloured by completion; open and fix any past day |
 | Progress | Heatmap, weekly/monthly completion, stat consistency, weakest quests, setbacks ledger, JSON backup |
 | Quests | Full CRUD on your quests (max 20 per day type) |
-| Shop | Spend coins on titles and accent themes |
-| Trophies | 13 milestones that pay coins |
-| Profile | Name, theme mode, plan window, change password, sign out everywhere, delete account |
-| Console, Hunters, Audit | Admin only |
+| Shop | Spend coins on titles and colour themes |
+| Trophies / Milestones | 19 milestones that pay coins |
+| The Hall / Leaderboard | Optional weekly board for friends (opt-in) |
+| Profile | Name, avatar, look (style, brightness, text size), Hall opt-in, plan window, change password, sign out everywhere, delete account |
+| Overview, Members, Audit | Admin only |
 
 ## Rules
 
-- **XP** 10 per quest, +20 for a perfect day, 100 XP per level.
+- **XP** 10 per quest, +20 for a perfect day, +15 for a daily dare, +50 for a weekly boss, 100 XP per level.
 - **Ranks** E, D (L6), C (L16), B (L31), A (L51), S (L76).
 - **Streak** counts consecutive perfect days. Today never breaks it until the day is over.
-- **Coins** +5 daily login, +10 perfect day, +100 for a month at 80% or better, plus milestone bonuses.
+- **Coins** +5 daily login, +10 perfect day, +5 daily dare, +40 weekly boss, +100 for a month at 80% or better, plus milestone bonuses.
+- **Daily dare** is picked for you from a list of 36 and never affects streaks or perfect days.
+- **Weekly boss** runs Monday to Sunday inside your plan; defeat it by clearing 80% of that week's quests. The first and last partial weeks are smaller.
 - **Streak Shield** costs 30 coins and repairs a missed past day (no XP, so stats stay honest).
 
 ## Security notes
@@ -72,20 +83,21 @@ npm run dev
 ```
 App: http://localhost:5173
 
-Sign in with your `ADMIN_EMAIL` / `ADMIN_PASSWORD` to see the Console, or create a normal hunter account.
+Sign in with your `ADMIN_EMAIL` / `ADMIN_PASSWORD` to see the admin Overview, or create a normal account.
 You can also promote an existing account: `python -m app.make_admin you@example.com`.
 
-### Upgrading from v1 or v2
+### Upgrading
 
-v3 changes every table (each row now belongs to a user), so the old local database can't be reused.
-Stop the backend, delete `backend/dev.db`, reinstall (`pip install -r requirements.txt`), and start again.
-The app refuses to start on an old database and tells you this. Then register and choose **16 Sep 2026**
-as your plan start to keep the original plan window.
+- **From v3**: nothing to delete. Your database is upgraded in place on startup (two new columns and a dares
+  table are added, old colour themes are mapped to the new ones). Run `pip install -r requirements.txt` and
+  `npm install` (v4 adds one font package).
+- **From v1 or v2**: every table changed in v3, so delete `backend/dev.db` once. The app tells you if it finds an old one.
+  Then register and choose **16 Sep 2026** as your plan start to keep the original plan window.
 
 ## Tests
 
 ```bash
-# backend: 70 tests on a temp database (never touches yours)
+# backend: 92 tests on a temp database (never touches yours)
 cd backend && pip install -r requirements-dev.txt && python -m pytest
 
 # frontend: renders the real app against a running throwaway backend
@@ -110,4 +122,5 @@ Delete `backend/smoke.db` afterwards.
 - [ ] Alembic migrations
 - [ ] httpOnly-cookie sessions and email-based password reset
 - [ ] Import a JSON backup
-- [ ] Weekly boss quests
+- [ ] Friends list and private groups for the Hall
+- [ ] Style, text size and brightness saved to the account (today they are per browser)

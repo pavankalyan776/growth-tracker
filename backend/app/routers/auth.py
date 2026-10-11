@@ -135,7 +135,14 @@ def change_password(payload: schemas.ChangePasswordIn, user: models.User = Depen
 @router.patch("/me", response_model=schemas.UserOut)
 def update_profile(payload: schemas.ProfileUpdate, user: models.User = Depends(get_current_user),
                    db: Session = Depends(get_db)):
-    user.name = payload.name
+    if payload.name is None and payload.avatar is None and payload.public_board is None:
+        raise HTTPException(status_code=400, detail="Nothing to update.")
+    if payload.name is not None:
+        user.name = payload.name
+    if payload.avatar is not None:
+        user.avatar = payload.avatar
+    if payload.public_board is not None:
+        user.public_board = payload.public_board
     db.commit()
     return user
 

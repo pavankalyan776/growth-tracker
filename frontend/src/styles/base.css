@@ -2,8 +2,8 @@
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0; background: var(--void); color: var(--text);
-  font-family: var(--font-body); font-size: var(--step-0); line-height: 1.5;
-  font-optical-sizing: auto; -webkit-font-smoothing: antialiased;
+  font-family: var(--font-body); font-size: var(--step-0);
+  font-optical-sizing: auto; -webkit-font-smoothing: antialiased; line-height: 1.55;
 }
 h1, h2, h3, h4, p { margin: 0; }
 button { font: inherit; color: inherit; }
@@ -11,7 +11,7 @@ img, svg { display: block; max-width: 100%; }
 a { color: var(--accent-text); }
 ::selection { background: var(--accent); color: var(--on-accent); }
 
-:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+:focus-visible { outline: 3px solid var(--cyan); outline-offset: 2px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 .display { font-family: var(--font-display); font-weight: 800; letter-spacing: 0.01em; line-height: 0.95; }
@@ -70,10 +70,9 @@ a { color: var(--accent-text); }
 .btn.ghost:hover:not(:disabled) { filter: none; }
 .btn.ghost:hover:not(:disabled)::before { background: var(--basalt); }
 .btn.danger { background: var(--red); color: #fff; }
-.btn.gold { background: var(--gold); color: #1a1200; }
+.btn.gold { background: var(--gold-fill); color: #2A1A00; }
 .btn:focus-visible { outline: 2px solid var(--cyan); outline-offset: -5px; }
 .link-btn { background: none; border: 0; padding: 0; color: var(--accent-text); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; font-size: inherit; }
-:root[data-mode="light"] .link-btn { color: var(--accent-light, var(--accent)); }
 
 .icon-btn {
   width: 44px; height: 44px; display: inline-grid; place-items: center; border: 1px solid var(--line); background: transparent;
@@ -117,15 +116,15 @@ a { color: var(--accent-text); }
 .seg button[aria-pressed="true"], .seg button[aria-selected="true"] { background: var(--accent); color: var(--on-accent); }
 
 /* ---------- Chips ---------- */
-.chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 999px; font-size: var(--step--1); font-weight: 600; background: var(--basalt); color: var(--text); border: 1px solid var(--line); white-space: nowrap; }
-.chip.gold { color: var(--gold); background: var(--gold-tint); border-color: color-mix(in srgb, var(--gold) 40%, transparent); }
+.chip { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 10px; border-radius: 999px; font-size: var(--step--1); font-weight: 600; background: var(--basalt); color: var(--text); border: 1px solid var(--line); white-space: nowrap; }
+.chip.gold { color: var(--gold); background: var(--gold-tint); border-color: color-mix(in srgb, var(--gold-fill) 55%, transparent); }
+.chip.coral { color: var(--coral); background: var(--coral-tint); border-color: color-mix(in srgb, var(--coral) 45%, transparent); }
 .chip.cyan { color: var(--cyan); background: var(--cyan-tint); border-color: color-mix(in srgb, var(--cyan) 40%, transparent); }
 .chip.red { color: var(--red-text); background: var(--red-tint); border-color: color-mix(in srgb, var(--red) 45%, transparent); }
 .chip.accent { color: var(--accent-text); background: var(--accent-glow); border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
-:root[data-mode="light"] .chip.accent { color: var(--accent); }
 .chip .icon { width: 15px; height: 15px; }
 
-.stat-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--text-2); }
+.stat-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8125rem; font-weight: 700; color: var(--text-2); }
 .stat-tag i { width: 9px; height: 9px; border-radius: 2px; background: var(--c); display: inline-block; }
 
 /* ---------- Skeleton ---------- */

@@ -1,4 +1,4 @@
-"""Quest templates a new hunter can start from (chosen during onboarding)."""
+"""Starting plans a new member can choose from during onboarding. Stats: STR fitness, INT learning, PER focus, VIT wellbeing, AGI skills."""
 
 # Compact helper: (label, time_label, stat)
 def _q(day_type, rows):
@@ -53,20 +53,66 @@ _WEEKEND_FOCUS = [
     ("Sleep before 11 PM", "11:00 PM", "VIT"),
 ]
 
+_WEEKDAY_WELL = [
+    ("Morning stretch or walk", "7:00 – 7:30 AM", "STR"),
+    ("Water: 8 glasses", "All day", "VIT"),
+    ("A proper lunch away from your screen", "1:00 – 1:30 PM", "VIT"),
+    ("Read or learn for 20 minutes", "8:00 – 8:20 PM", "INT"),
+    ("Tidy up for 10 minutes", "8:30 – 8:40 PM", "PER"),
+    ("Screens off, wind down", "10:00 – 10:30 PM", "VIT"),
+    ("Sleep, 7–8 hrs", "10:30 PM – 6:30 AM", "VIT"),
+]
+_WEEKEND_WELL = [
+    ("Longer walk or workout", "8:00 – 9:00 AM", "STR"),
+    ("Water: 8 glasses", "All day", "VIT"),
+    ("Do something you enjoy", "3:00 – 5:00 PM", "AGI"),
+    ("Call or meet someone you like", "5:00 – 6:00 PM", "PER"),
+    ("Plan the week ahead", "7:00 – 7:20 PM", "PER"),
+    ("Sleep, 7–8 hrs", "10:30 PM – 7:00 AM", "VIT"),
+]
+
+_WEEKDAY_STUDENT = [
+    ("Morning revision", "6:30 – 7:30 AM", "INT"),
+    ("Classes or lectures", "9:00 AM – 3:00 PM", "VIT"),
+    ("Homework and assignments", "4:30 – 6:00 PM", "PER"),
+    ("Exercise or sport", "6:00 – 7:00 PM", "STR"),
+    ("Practice problems", "8:00 – 9:00 PM", "AGI"),
+    ("Water: 8 glasses", "All day", "VIT"),
+    ("Sleep, 7–8 hrs", "10:30 PM – 6:00 AM", "VIT"),
+]
+_WEEKEND_STUDENT = [
+    ("Deep study block", "9:00 – 11:00 AM", "INT"),
+    ("Mock test or past paper", "11:30 AM – 1:30 PM", "PER"),
+    ("Hobby or time with friends", "3:00 – 5:00 PM", "AGI"),
+    ("Exercise or sport", "5:00 – 6:00 PM", "STR"),
+    ("Plan next week", "7:00 – 7:30 PM", "PER"),
+    ("Sleep, 7–8 hrs", "10:30 PM – 7:00 AM", "VIT"),
+]
+
 TEMPLATES = {
+    "wellbeing": {
+        "label": "Everyday wellbeing",
+        "desc": "For anyone: movement, water, a proper lunch, a little learning, tidying and good sleep. 7 tasks a day.",
+        "quests": _q("weekday", _WEEKDAY_WELL) + _q("saturday", _WEEKEND_WELL) + _q("sunday", _WEEKEND_WELL),
+    },
+    "student": {
+        "label": "Student life",
+        "desc": "Revision, classes, homework, sport, practice problems and rest. 7 tasks a day.",
+        "quests": _q("weekday", _WEEKDAY_STUDENT) + _q("saturday", _WEEKEND_STUDENT) + _q("sunday", _WEEKEND_STUDENT),
+    },
     "exam_ai": {
         "label": "Exam + AI Engineer",
-        "desc": "Office hours, govt exam prep, an AI course, NeetCode, exercise, water and sleep. 7 quests a day.",
+        "desc": "Office hours, govt exam prep, an AI course, NeetCode, exercise, water and sleep. 7 tasks a day.",
         "quests": _q("weekday", _WEEKDAY_EXAM) + _q("saturday", _SAT_EXAM) + _q("sunday", _SUN_EXAM),
     },
     "focus": {
         "label": "Deep focus",
-        "desc": "A lighter plan: movement, deep work, learning, reading, water and sleep. 6 quests a day.",
+        "desc": "A lighter plan: movement, deep work, learning, reading, water and sleep. 6 tasks a day.",
         "quests": _q("weekday", _WEEKDAY_FOCUS) + _q("saturday", _WEEKEND_FOCUS) + _q("sunday", _WEEKEND_FOCUS),
     },
     "blank": {
         "label": "Blank slate",
-        "desc": "Start empty and build your own quests.",
+        "desc": "Start empty and build your own list.",
         "quests": [],
     },
 }

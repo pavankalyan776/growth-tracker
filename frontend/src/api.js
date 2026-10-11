@@ -69,7 +69,7 @@ export const api = {
   getTemplates: () => request("/api/templates", { auth: false }),
   onboard: (template, planStart, planEnd) => post("/api/onboarding", { template, plan_start: planStart, plan_end: planEnd }),
   updatePlan: (planStart, planEnd) => put("/api/plan", { plan_start: planStart, plan_end: planEnd }),
-  updateProfile: (name) => patch("/api/me", { name }),
+  updateProfile: (fields) => patch("/api/me", fields),
   changePassword: (current, next) => post("/api/auth/change-password", { current_password: current, new_password: next }),
   logoutEverywhere: () => post("/api/auth/logout-all", {}),
   deleteAccount: (password) => post("/api/me/delete", { password }),
@@ -88,6 +88,9 @@ export const api = {
   createQuest: (quest) => post("/api/quests", quest),
   updateQuest: (id, patchBody) => put(`/api/quests/${id}`, patchBody),
   deleteQuest: (id) => del(`/api/quests/${id}`),
+
+  toggleDare: (dateStr, completed) => post("/api/dares/toggle", { date: dateStr, completed }),
+  getBoard: () => request("/api/board"),
 
   useShield: (dateStr) => post("/api/shields", { date: dateStr }),
 

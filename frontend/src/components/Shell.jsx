@@ -1,31 +1,28 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Avatar from "./Avatar";
 import Icon from "./icons";
 import RankEmblem from "./RankEmblem";
 import { useAuth } from "../auth";
 import { useGame } from "../game";
-import { applyMode, getModePref, resolveMode } from "../theme";
+import { useLook } from "../look";
 
-export const TRACKER_NAV = [
+const trackerNav = (w) => [
   { key: "today", label: "Today", icon: "gate" },
   { key: "calendar", label: "Calendar", icon: "calendar" },
   { key: "progress", label: "Progress", icon: "chart" },
-  { key: "quests", label: "Quests", icon: "list" },
-  { key: "shop", label: "Shop", icon: "bag" },
-  { key: "achievements", label: "Trophies", icon: "trophy" },
+  { key: "hall", label: w.hall, icon: "podium" },
+  { key: "quests", label: w.habits, icon: "list" },
+  { key: "shop", label: w.rewards, icon: "bag" },
+  { key: "achievements", label: w.milestones, icon: "trophy" },
 ];
-export const ADMIN_NAV = [
-  { key: "admin", label: "Console", icon: "shield" },
-  { key: "admin/users", label: "Hunters", icon: "users" },
+const adminNav = (w) => [
+  { key: "admin", label: "Overview", icon: "shield" },
+  { key: "admin/users", label: w.members, icon: "users" },
   { key: "admin/audit", label: "Audit", icon: "log" },
 ];
-const MOBILE_TABS = ["today", "calendar", "progress", "shop"];
-
-function useMode() {
-  const [pref, setPref] = useState(getModePref);
-  const set = useCallback((next) => { applyMode(next); setPref(next); }, []);
-  const toggle = useCallback(() => set(resolveMode(pref) === "dark" ? "light" : "dark"), [pref, set]);
-  return { pref, set, toggle, dark: resolveMode(pref) === "dark" };
-}
+const MOBILE_TABS = ["today", "calendar", "progress", "hall"];
+const SIZES = ["standard", "large", "xl"];
+const SIZE_LABEL = { standard: "Standard text", large: "Large text", xl: "Extra large text" };
 
 function isActive(item, route) {
   const current = route.name === "admin" && route.param ? `admin/${route.param}` : route.name;
@@ -36,7 +33,13 @@ export default function Shell({ route, title, subtitle, children, trackerReady }
   const { user, signOut } = useAuth();
   const game = useGame();
   const o = game ? game.overview : null;
-  const mode = useMode();
+  const look = useLook();
+  const { w } = look;
+  const mode = { dark: look.dark, toggle: look.toggleMode };
+  const TRACKER_NAV = useMemo(() => trackerNav(w), [w]);
+  const ADMIN_NAV = useMemo(() => adminNav(w), [w]);
+  const nextSize = SIZES[(SIZES.indexOf(look.size) + 1) % SIZES.length];
+  const nextStyle = look.style === "adventure" ? "calm" : "adventure";
   const [palette, setPalette] = useState(false);
   const [more, setMore] = useState(false);
   const isAdmin = user.role === "admin";
@@ -55,15 +58,18 @@ export default function Shell({ route, title, subtitle, children, trackerReady }
     const list = [];
     if (trackerReady) {
       list.push(go("today", "Go to Today", "gate"), go("calendar", "Open the calendar", "calendar"),
-        go("progress", "See your progress", "chart"), go("quests", "Edit your quests", "list"),
-        go("shop", "Open the shop", "bag"), go("achievements", "View trophies and milestones", "trophy"));
+        go("progress", "See your progress", "chart"), go("hall", `Open the ${w.hall.replace("The ", "")}`, "podium"),
+        go("quests", `Edit your ${w.habitsLower}`, "list"),
+        go("shop", `Open ${w.rewards}`, "bag"), go("achievements", `View ${w.milestones.toLowerCase()}`, "trophy"));
     }
     list.push(go("profile", "Profile and settings", "user"));
-    if (isAdmin) list.push(go("admin", "Admin console", "shield"), go("admin/users", "Admin: hunters", "users"), go("admin/audit", "Admin: audit log", "log"));
-    list.push({ id: "mode", label: mode.dark ? "Switch to Daylight mode" : "Switch to Void mode", icon: mode.dark ? "sun" : "moon", run: mode.toggle });
+    if (isAdmin) list.push(go("admin", "Admin overview", "shield"), go("admin/users", `Admin: ${w.members.toLowerCase()}`, "users"), go("admin/audit", "Admin: audit log", "log"));
+    list.push({ id: "mode", label: mode.dark ? "Switch to Day mode" : "Switch to Night mode", icon: mode.dark ? "sun" : "moon", run: mode.toggle });
+    list.push({ id: "style", label: `Switch to ${nextStyle === "calm" ? "Calm (plain words)" : "Adventure (game words)"}`, icon: nextStyle === "calm" ? "leaf" : "swords", run: () => look.setStyle(nextStyle) });
+    list.push({ id: "size", label: `Text size: ${SIZE_LABEL[nextSize].toLowerCase()}`, icon: "textsize", run: () => look.setSize(nextSize) });
     list.push({ id: "out", label: "Sign out", icon: "logout", run: () => signOut() });
     return list;
-  }, [route, isAdmin, trackerReady, mode.dark, mode.toggle, signOut]);
+  }, [route, isAdmin, trackerReady, mode.dark, mode.toggle, signOut, w, look, nextStyle, nextSize, TRACKER_NAV, ADMIN_NAV]);
 
   return (
     <div className="shell">
@@ -92,7 +98,7 @@ export default function Shell({ route, title, subtitle, children, trackerReady }
           )}
         </nav>
         <a href="#/profile" className={`rail-link rail-me${route.name === "profile" ? " is-active" : ""}`} aria-label="Profile and settings">
-          <span className="avatar">{user.name.slice(0, 1).toUpperCase()}</span><span>Profile</span>
+          <Avatar name={user.name} avatar={user.avatar} size={38} /><span>Profile</span>
         </a>
       </aside>
 
@@ -115,8 +121,17 @@ export default function Shell({ route, title, subtitle, children, trackerReady }
                 <a className="chip gold" href="#/shop" title="Coins"><Icon name="coin" />{o.coins}<span className="sr-only"> coins</span></a>
               </>
             )}
+            <button type="button" className="icon-btn hide-sm" onClick={() => look.setStyle(nextStyle)}
+              aria-label={`Switch to ${nextStyle === "calm" ? "Calm, plain words" : "Adventure, game words"}`}
+              title={`Switch to ${nextStyle === "calm" ? "Calm" : "Adventure"}`}>
+              <Icon name={nextStyle === "calm" ? "leaf" : "swords"} />
+            </button>
+            <button type="button" className="icon-btn hide-sm" onClick={() => look.setSize(nextSize)}
+              aria-label={`Text size. Switch to ${SIZE_LABEL[nextSize].toLowerCase()}`} title={SIZE_LABEL[nextSize]}>
+              <Icon name="textsize" />
+            </button>
             <button type="button" className="icon-btn hide-sm" onClick={mode.toggle}
-              aria-label={mode.dark ? "Switch to Daylight mode" : "Switch to Void mode"}>
+              aria-label={mode.dark ? "Switch to Day mode" : "Switch to Night mode"}>
               <Icon name={mode.dark ? "sun" : "moon"} />
             </button>
           </div>
@@ -150,7 +165,9 @@ export default function Shell({ route, title, subtitle, children, trackerReady }
             <a key={item.key} href={`#/${item.key}`} onClick={() => setMore(false)}><Icon name={item.icon} />Admin: {item.label}</a>
           ))}
           <a href="#/profile" onClick={() => setMore(false)}><Icon name="user" />Profile and settings</a>
-          <button type="button" onClick={() => { mode.toggle(); setMore(false); }}><Icon name={mode.dark ? "sun" : "moon"} />{mode.dark ? "Daylight mode" : "Void mode"}</button>
+          <button type="button" onClick={() => { mode.toggle(); setMore(false); }}><Icon name={mode.dark ? "sun" : "moon"} />{mode.dark ? "Day mode" : "Night mode"}</button>
+          <button type="button" onClick={() => { look.setStyle(nextStyle); setMore(false); }}><Icon name={nextStyle === "calm" ? "leaf" : "swords"} />{nextStyle === "calm" ? "Calm (plain words)" : "Adventure (game words)"}</button>
+          <button type="button" onClick={() => look.setSize(nextSize)}><Icon name="textsize" />{SIZE_LABEL[nextSize]}</button>
           <button type="button" onClick={() => signOut()}><Icon name="logout" />Sign out</button>
         </MoreSheet>
       )}
@@ -220,11 +237,12 @@ function CommandPalette({ commands, onClose }) {
 
 /* A compact rank + XP strip, used at the top of the Today side panel on small screens. */
 export function MiniHunter({ o }) {
+  const { w } = useLook();
   return (
     <div className="mini-hunter">
       <RankEmblem rank={o.rank} size={44} />
       <div className="grow">
-        <div className="row"><b className="display" style={{ fontSize: "1.25rem" }}>{o.hunter_name}</b><span className="faint small">Level {o.level}</span></div>
+        <div className="row"><b className="display" style={{ fontSize: "1.25rem" }}>{o.hunter_name}</b><span className="faint small">{w.levelWord} {o.level}</span></div>
         <div className="xpbar"><i style={{ width: `${(o.xp_into_level / o.xp_per_level) * 100}%` }} /></div>
       </div>
     </div>

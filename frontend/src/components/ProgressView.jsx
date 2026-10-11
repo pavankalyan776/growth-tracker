@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Icon from "./icons";
-import { HBars, Heatmap, StatLines, STAT_COLOR, STAT_NAME, WeeklyBars } from "./charts";
+import { HBars, Heatmap, StatLines, STAT_COLOR, WeeklyBars } from "./charts";
+import { useLook, useStatNames } from "../look";
 import { api } from "../api";
 import { formatShort, parseKey } from "../dateUtils";
 
@@ -27,6 +28,8 @@ function Card({ title, hint, children, wide }) {
 }
 
 export default function ProgressView({ route }) {
+  const { w } = useLook();
+  const { name: STAT_NAME } = useStatNames();
   const [data, setData] = useState(null);
   const [heat, setHeat] = useState(null);
   const [journal, setJournal] = useState([]);
@@ -65,12 +68,12 @@ export default function ProgressView({ route }) {
     <div className="stack">
       <div className="tiles">
         <Tile label="Average completion" value={`${s.avg_completion}%`} sub={`${s.tracked_days} days tracked`} />
-        <Tile label="Perfect days" value={s.perfect_days} sub="every quest cleared" />
+        <Tile label="Perfect days" value={s.perfect_days} sub={`every ${w.habit} done`} />
         <Tile label="Current streak" value={s.current_streak} sub={`best ${s.longest_streak}`} />
         <Tile label="Missed days" value={s.missed_days} sub="see the ledger below" tone={s.missed_days ? "warn" : ""} />
       </div>
 
-      <Card title="Consistency map" hint="Every day of your plan. Brighter means more quests cleared." wide>
+      <Card title="Consistency map" hint={`Every day of your plan. Darker means more ${w.habitsLower} done.`} wide>
         <Heatmap cells={heat} onPick={open} />
       </Card>
 
@@ -79,26 +82,26 @@ export default function ProgressView({ route }) {
         <Card title="Monthly average" hint="The tick marks the 80% line for the monthly coin bonus.">
           {monthRows.length ? <HBars rows={monthRows} target={80} /> : <div className="viz-empty">No full data yet.</div>}
         </Card>
-        <Card title="Consistency by stat"><HBars rows={statRows} /></Card>
+        <Card title={w.style === "calm" ? "Consistency by strength" : "Consistency by stat"}><HBars rows={statRows} /></Card>
         <Card title="Day-of-week pattern" hint="Find the days that quietly sink you."><HBars rows={weekdayRows} /></Card>
         {data.weakest.length > 0 && (
-          <Card title="Needs attention" hint="Your least-completed quests so far.">
+          <Card title="Needs attention" hint={`Your least-completed ${w.habitsLower} so far.`}>
             <HBars rows={data.weakest.map(questRow)} />
             {data.strongest.length > 0 && (<><h4 className="subhead">Going strong</h4><HBars rows={data.strongest.map(questRow)} /></>)}
           </Card>
         )}
-        <Card title="Stat growth" hint="Cumulative XP in each stat, week by week."><StatLines growth={data.stat_growth} /></Card>
+        <Card title={w.style === "calm" ? "Strength growth" : "Stat growth"} hint={`Cumulative ${w.style === "calm" ? "points" : "XP"} in each area, week by week.`}><StatLines growth={data.stat_growth} /></Card>
       </div>
 
       <div className="progress-grid">
-        <Card title="Setbacks ledger" hint="Days that didn't count. Every one is a lesson, and a shield can repair any of them.">
+        <Card title="Setbacks ledger" hint="Days that didn't count. Every one is a lesson, and a streak shield can repair any of them.">
           {data.missed.length === 0 ? <div className="viz-empty">No missed days. Keep it that way.</div> : (
             <ul className="ledger">
               {data.missed.map((m) => (
                 <li key={m.date}>
                   <div className="ledger-main">
                     <strong>{formatShort(parseKey(m.date))}</strong>
-                    <span className="ledger-pct">{m.pct}% cleared</span>
+                    <span className="ledger-pct">{m.pct}% done</span>
                     <button type="button" className="link-btn" onClick={() => open(m.date)}>Open</button>
                   </div>
                   {m.struggle && <div className="ledger-note struggle">"{m.struggle}"</div>}
@@ -128,7 +131,7 @@ export default function ProgressView({ route }) {
       </div>
 
       <section className="panel sm row wrap">
-        <div className="grow"><b>Back up your data</b><p className="small muted">Quests, history, journal and coins as one JSON file.</p></div>
+        <div className="grow"><b>Back up your data</b><p className="small muted">{`${w.habits}, history, journal and coins as one JSON file.`}</p></div>
         <button type="button" className="btn ghost" onClick={download} disabled={exporting}><Icon name="download" />{exporting ? "Preparing…" : "Download backup"}</button>
       </section>
     </div>

@@ -43,7 +43,7 @@ def count_active_admins(db: Session) -> int:
 def delete_user_and_data(db: Session, user_id: int) -> None:
     """Remove a user and everything they own. Explicit so it behaves the same on SQLite and MySQL."""
     for model in (models.Completion, models.Journal, models.CoinTransaction, models.Shield,
-                  models.Purchase, models.MilestoneAchieved, models.Quest):
+                  models.Purchase, models.MilestoneAchieved, models.DareDone, models.Quest):
         db.query(model).filter(model.user_id == user_id).delete(synchronize_session=False)
     db.query(models.User).filter(models.User.id == user_id).delete(synchronize_session=False)
     db.commit()
@@ -134,6 +134,17 @@ def set_completion(db: Session, user_id: int, quest_id: int, on: date, completed
     if completed and not row:
         db.add(models.Completion(user_id=user_id, quest_id=quest_id, date=on, completed=True))
     elif not completed and row:
+        db.delete(row)
+    db.commit()
+
+
+# ---------- Daily dares ----------
+
+def set_dare(db: Session, user_id: int, on: date, done: bool) -> None:
+    row = db.query(models.DareDone).filter(models.DareDone.user_id == user_id, models.DareDone.date == on).first()
+    if done and not row:
+        db.add(models.DareDone(user_id=user_id, date=on))
+    elif not done and row:
         db.delete(row)
     db.commit()
 

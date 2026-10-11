@@ -12,6 +12,7 @@ Design notes
   with a user in India about what day it is.
 - Each hunter has their own plan window (plan_start..plan_end), chosen during onboarding.
 """
+import math
 from collections import defaultdict
 from datetime import date, timedelta
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Set, Tuple
@@ -19,6 +20,7 @@ from typing import Any, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 from sqlalchemy.orm import Session
 
 from . import crud, models
+from .dares import DARE_COINS, DARE_XP, dare_for
 
 STAT_KEYS = ["STR", "INT", "PER", "VIT", "AGI"]
 MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July",
@@ -27,6 +29,12 @@ MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July",
 XP_PER_QUEST = 10
 XP_PERFECT_BONUS = 20
 XP_PER_LEVEL = 100
+
+BOSS_TARGET = 80      # a week's boss falls when you clear this % of that week's quests
+BOSS_XP = 50
+BOSS_COINS = 40
+BOSS_NAMES = ["The Snooze Hydra", "Procrastination Golem", "The Doubt Wraith", "Scroll Specter", "Couch Dragon",
+              "Excuse Titan", "The Distraction Swarm", "Comparison Imp", "Midnight Gremlin", "The Perfection Sphinx"]
 
 SHIELD_COST = 30
 LOGIN_BONUS = 5
@@ -38,31 +46,45 @@ MONTHLY_TARGET = 80   # average completion % needed for the monthly achievement
 RANKS = [("E", 1), ("D", 6), ("C", 16), ("B", 31), ("A", 51), ("S", 76)]
 
 MILESTONE_DEFS = [
-    {"id": "first_blood", "title": "First Blood", "desc": "Clear your first quest.",
+    {"id": "first_blood", "calm": {"title": "First Step", "desc": "Complete your first habit."}, "title": "First Blood", "desc": "Clear your first quest.",
      "reward": 20, "cond": lambda s: s["total_completed"] >= 1},
     {"id": "week_streak", "title": "One Week Strong", "desc": "Reach a 7-day streak.",
      "reward": 50, "cond": lambda s: s["longest_streak"] >= 7},
-    {"id": "month_streak", "title": "Iron Will", "desc": "Reach a 30-day streak.",
+    {"id": "month_streak", "calm": {"title": "A Month of Habits", "desc": "Reach a 30-day streak."}, "title": "Iron Will", "desc": "Reach a 30-day streak.",
      "reward": 200, "cond": lambda s: s["longest_streak"] >= 30},
     {"id": "comeback", "title": "Comeback Kid", "desc": "Clear a perfect day right after a missed one.",
      "reward": 40, "cond": lambda s: s["comeback"]},
-    {"id": "journal_keeper", "title": "Reflective Hunter", "desc": "Write 7 journal entries.",
+    {"id": "journal_keeper", "calm": {"title": "Thoughtful Writer", "desc": "Write 7 journal entries."}, "title": "Reflective Hunter", "desc": "Write 7 journal entries.",
      "reward": 30, "cond": lambda s: s["journal_count"] >= 7},
-    {"id": "rank_d", "title": "Rank Up: D", "desc": "Climb out of E-rank.",
+    {"id": "rank_d", "calm": {"title": "New Tier: Sprout", "desc": "Grow out of the Seed tier."}, "title": "Rank Up: D", "desc": "Climb out of E-rank.",
      "reward": 30, "cond": lambda s: s["rank"] != "E"},
-    {"id": "rank_c", "title": "Rank Up: C", "desc": "Reach C-rank.",
+    {"id": "rank_c", "calm": {"title": "New Tier: Sapling", "desc": "Reach the Sapling tier."}, "title": "Rank Up: C", "desc": "Reach C-rank.",
      "reward": 60, "cond": lambda s: s["rank"] in ("C", "B", "A", "S")},
-    {"id": "rank_b", "title": "Rank Up: B", "desc": "Reach B-rank.",
+    {"id": "rank_b", "calm": {"title": "New Tier: Tree", "desc": "Reach the Tree tier."}, "title": "Rank Up: B", "desc": "Reach B-rank.",
      "reward": 100, "cond": lambda s: s["rank"] in ("B", "A", "S")},
-    {"id": "rank_a", "title": "Rank Up: A", "desc": "Reach A-rank.",
+    {"id": "rank_a", "calm": {"title": "New Tier: Grove", "desc": "Reach the Grove tier."}, "title": "Rank Up: A", "desc": "Reach A-rank.",
      "reward": 150, "cond": lambda s: s["rank"] in ("A", "S")},
-    {"id": "rank_s", "title": "Rank Up: S, Shadow Monarch", "desc": "Reach the top rank.",
+    {"id": "rank_s", "calm": {"title": "New Tier: Forest", "desc": "Reach the top tier."}, "title": "Rank Up: S, Shadow Monarch", "desc": "Reach the top rank.",
      "reward": 300, "cond": lambda s: s["rank"] == "S"},
-    {"id": "hundred_quests", "title": "Centurion", "desc": "Clear 100 total quests.",
+    {"id": "hundred_quests", "calm": {"title": "Hundred Habits", "desc": "Complete 100 habits in total."}, "title": "Centurion", "desc": "Clear 100 total quests.",
      "reward": 100, "cond": lambda s: s["total_completed"] >= 100},
     {"id": "halfway", "title": "Halfway Point", "desc": "Reach the midpoint of your plan.",
      "reward": 50, "cond": lambda s: s["today"] >= s["midpoint"]},
-    {"id": "finisher", "title": "Final Boss Cleared", "desc": "Reach the last day of your plan.",
+    {"id": "first_dare", "title": "Dare Accepted", "desc": "Finish your first Daily Dare.",
+     "reward": 15, "cond": lambda s: s["dares_done"] >= 1},
+    {"id": "dare_10", "title": "Daredevil", "desc": "Finish 10 Daily Dares.",
+     "reward": 50, "cond": lambda s: s["dares_done"] >= 10},
+    {"id": "dare_30", "title": "Fearless", "desc": "Finish 30 Daily Dares.",
+     "reward": 120, "cond": lambda s: s["dares_done"] >= 30},
+    {"id": "boss_1", "calm": {"title": "Goal Getter", "desc": "Reach your first weekly goal."}, "title": "Boss Slayer", "desc": "Defeat your first weekly boss.",
+     "reward": 50, "cond": lambda s: s["bosses_defeated"] >= 1},
+    {"id": "boss_4", "calm": {"title": "Goal Machine", "desc": "Reach 4 weekly goals."}, "title": "Boss Hunter", "desc": "Defeat 4 weekly bosses.",
+     "reward": 150, "cond": lambda s: s["bosses_defeated"] >= 4},
+    {"id": "perfect_10", "title": "Perfect Ten", "desc": "Clear every quest on 10 days.",
+     "reward": 60, "cond": lambda s: s["perfect_days"] >= 10},
+    {"id": "fortnight", "title": "Fortnight Flame", "desc": "Reach a 14-day streak.",
+     "reward": 80, "cond": lambda s: s["longest_streak"] >= 14},
+    {"id": "finisher", "calm": {"title": "Plan Complete", "desc": "Reach the last day of your plan."}, "title": "Final Boss Cleared", "desc": "Reach the last day of your plan.",
      "reward": 500, "cond": lambda s: s["today"] >= s["end"]},
 ]
 
@@ -106,7 +128,7 @@ def month_end(y: int, m: int) -> date:
 class Snapshot:
     def __init__(self, start: Optional[date], end: Optional[date], quests: Iterable[models.Quest],
                  completions: Iterable[Tuple[int, date]], shields: Iterable[date],
-                 journal: Dict[date, Any]):
+                 journal: Dict[date, Any], dares: Iterable[date] = (), user_id: int = 0):
         # A hunter who hasn't finished onboarding has no plan yet: an empty window.
         self.start = start
         self.end = end
@@ -120,6 +142,8 @@ class Snapshot:
             self.done[d].add(quest_id)
         self.shields: Set[date] = set(shields)
         self.journal = journal
+        self.dares: Set[date] = set(dares)
+        self.user_id = user_id
 
     @classmethod
     def load(cls, db: Session, user: models.User) -> "Snapshot":
@@ -129,7 +153,31 @@ class Snapshot:
             models.Completion.user_id == uid, models.Completion.completed == True).all()  # noqa: E712
         shields = [r[0] for r in db.query(models.Shield.date).filter(models.Shield.user_id == uid).all()]
         journal = {j.date: j for j in db.query(models.Journal).filter(models.Journal.user_id == uid).all()}
-        return cls(user.plan_start, user.plan_end, quests, [(c[0], c[1]) for c in comps], shields, journal)
+        dares = [r[0] for r in db.query(models.DareDone.date).filter(models.DareDone.user_id == uid).all()]
+        return cls(user.plan_start, user.plan_end, quests, [(c[0], c[1]) for c in comps], shields, journal,
+                   dares, uid)
+
+    @classmethod
+    def load_many(cls, db: Session, users: List[models.User]) -> Dict[int, "Snapshot"]:
+        """Snapshots for several users in a handful of queries (used by the leaderboard)."""
+        ids = [u.id for u in users]
+        if not ids:
+            return {}
+        quests, comps, shields, dares = defaultdict(list), defaultdict(list), defaultdict(list), defaultdict(list)
+        for q in db.query(models.Quest).filter(models.Quest.user_id.in_(ids)).all():
+            quests[q.user_id].append(q)
+        for uid, qid, d in db.query(models.Completion.user_id, models.Completion.quest_id,
+                                    models.Completion.date).filter(
+                models.Completion.user_id.in_(ids), models.Completion.completed == True).all():  # noqa: E712
+            comps[uid].append((qid, d))
+        for uid, d in db.query(models.Shield.user_id, models.Shield.date).filter(
+                models.Shield.user_id.in_(ids)).all():
+            shields[uid].append(d)
+        for uid, d in db.query(models.DareDone.user_id, models.DareDone.date).filter(
+                models.DareDone.user_id.in_(ids)).all():
+            dares[uid].append(d)
+        return {u.id: cls(u.plan_start, u.plan_end, quests[u.id], comps[u.id], shields[u.id], {}, dares[u.id], u.id)
+                for u in users}
 
     # ---- plan window ----
     @property
@@ -173,9 +221,47 @@ class Snapshot:
     def is_shielded(self, d: date) -> bool:
         return d in self.shields
 
+    def dare_done(self, d: date) -> bool:
+        return d in self.dares
+
     def is_good(self, d: date) -> bool:
         """A day that keeps the streak alive: perfect, or protected by a shield."""
         return self.is_perfect(d) or self.is_shielded(d)
+
+
+# ---------------------------------------------------------------------------
+# Weekly boss: each Monday-to-Sunday week inside your plan has one
+# ---------------------------------------------------------------------------
+
+def boss_week(snap: Snapshot, monday: date, today: date, index: int = 0) -> Optional[dict]:
+    """State of one week's boss, or None if the plan has no quests that week."""
+    days = [d for d in daterange(monday, monday + timedelta(days=6)) if snap.in_plan(d)]
+    possible = sum(len(snap.tasks(d)) for d in days)
+    if possible == 0:
+        return None
+    done = sum(snap.score(d)["count"] for d in days if d <= today)
+    hp = max(1, math.ceil(possible * BOSS_TARGET / 100))
+    return {
+        "week_start": monday.isoformat(), "name": BOSS_NAMES[index % len(BOSS_NAMES)],
+        "possible": possible, "done": done, "hp": hp, "damage": min(done, hp), "remaining": max(0, hp - done),
+        "defeated": done >= hp, "reward_coins": BOSS_COINS, "reward_xp": BOSS_XP,
+        "days_left": max(0, (monday + timedelta(days=6) - today).days),
+    }
+
+
+def boss_weeks(snap: Snapshot, today: date) -> List[dict]:
+    """Every week from the plan start up to today's week, oldest first."""
+    if not snap.has_plan or today < snap.start:
+        return []
+    out = []
+    cur, last, i = monday_of(snap.start), monday_of(min(today, snap.end)), 0
+    while cur <= last:
+        week = boss_week(snap, cur, today, i)
+        if week:
+            out.append(week)
+            i += 1
+        cur += timedelta(days=7)
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -208,6 +294,7 @@ def compute_progress(snap: Snapshot, today: date) -> dict:
     total_completed = 0
     perfect_days = 0
     stat_totals = {k: 0 for k in STAT_KEYS}
+    dares_done = 0
     for d in snap.tracked_days(today):
         s = snap.score(d)
         xp += s["count"] * XP_PER_QUEST
@@ -215,15 +302,20 @@ def compute_progress(snap: Snapshot, today: date) -> dict:
         if snap.is_perfect(d):
             xp += XP_PERFECT_BONUS
             perfect_days += 1
+        if snap.dare_done(d):
+            xp += DARE_XP
+            dares_done += 1
         ids = snap.done_ids(d)
         for t in snap.tasks(d):
             if t.id in ids and t.stat in stat_totals:
                 stat_totals[t.stat] += XP_PER_QUEST
+    bosses = sum(1 for w in boss_weeks(snap, today) if w["defeated"])
+    xp += bosses * BOSS_XP
     level = level_from_xp(xp)
     return {
         "total_xp": xp, "level": level, "rank": rank_from_level(level),
         "total_completed": total_completed, "perfect_days": perfect_days,
-        "stat_totals": stat_totals,
+        "stat_totals": stat_totals, "dares_done": dares_done, "bosses_defeated": bosses,
     }
 
 
@@ -272,11 +364,14 @@ def reconcile(db: Session, snap: Snapshot, user: models.User, today: date) -> Li
     existing = db.query(models.CoinTransaction).filter(models.CoinTransaction.user_id == uid).all()
     login_dates = {t.date for t in existing if t.reason == "Daily login"}
     perfect_dates = {t.date for t in existing if t.reason == "Perfect day"}
+    dare_dates = {t.date for t in existing if t.reason == "Daily dare"}
     reasons = {t.reason for t in existing}
 
-    def grant(amount: int, reason: str, on: date, kind: str) -> None:
+    def grant(amount: int, reason: str, on: date, kind: str, **extra: Any) -> None:
         crud.add_coin_tx(db, uid, on, amount, reason, commit=False)
-        events.append({"amount": amount, "reason": reason, "kind": kind})
+        event = {"amount": amount, "reason": reason, "kind": kind}
+        event.update(extra)
+        events.append(event)
 
     # 1) Daily login
     if snap.in_plan(today) and today not in login_dates:
@@ -287,6 +382,17 @@ def reconcile(db: Session, snap: Snapshot, user: models.User, today: date) -> Li
     for d in days:
         if snap.is_perfect(d) and d not in perfect_dates:
             grant(PERFECT_BONUS, "Perfect day", d, "perfect")
+
+    # 2b) Daily dares
+    for d in days:
+        if snap.dare_done(d) and d not in dare_dates:
+            grant(DARE_COINS, "Daily dare", d, "dare")
+
+    # 2c) Weekly bosses
+    for w in boss_weeks(snap, today):
+        reason = "Boss defeated {}".format(w["week_start"])
+        if w["defeated"] and reason not in reasons:
+            grant(BOSS_COINS, reason, today, "boss", boss=w["name"])
 
     # 3) Monthly achievement: a finished month with average completion >= target
     for (y, m) in sorted({(d.year, d.month) for d in daterange(snap.start, snap.end)}):
@@ -303,7 +409,8 @@ def reconcile(db: Session, snap: Snapshot, user: models.User, today: date) -> Li
     ctx = {
         "total_completed": prog["total_completed"], "longest_streak": longest, "rank": prog["rank"],
         "today": today, "journal_count": len(snap.journal), "comeback": has_comeback(snap, today),
-        "midpoint": snap.midpoint(), "end": snap.end,
+        "midpoint": snap.midpoint(), "end": snap.end, "dares_done": prog["dares_done"],
+        "bosses_defeated": prog["bosses_defeated"], "perfect_days": prog["perfect_days"],
     }
     achieved = {m.milestone_key for m in
                 db.query(models.MilestoneAchieved).filter(models.MilestoneAchieved.user_id == uid).all()}
@@ -340,9 +447,13 @@ def build_overview(db: Session, snap: Snapshot, user: models.User, today: date) 
     title = ITEMS_BY_KEY.get(user.title_key, ITEMS_BY_KEY[DEFAULT_TITLE])
     plan_day = (min(today, snap.end) - snap.start).days + 1 if snap.has_plan and today >= snap.start else 0
 
+    weeks = boss_weeks(snap, today)
+    boss = next((w for w in weeks if w["week_start"] == monday_of(today).isoformat()), None)
     return {
+        "avatar": user.avatar, "public_board": bool(user.public_board),
+        "boss": boss, "bosses_defeated": prog["bosses_defeated"], "dares_done": prog["dares_done"],
         "hunter_name": user.name,
-        "title": title["label"],
+        "title": title["label"], "title_calm": title["calm"],
         "theme": theme_payload(user.theme_key),
         "today": today.isoformat(),
         "in_plan": snap.in_plan(today),
@@ -382,6 +493,8 @@ def build_day(snap: Snapshot, d: date, today: date) -> dict:
             for t in snap.tasks(d)
         ],
         "score": score,
+        "dare": ({**dare_for(snap.user_id, d), "done": snap.dare_done(d), "xp": DARE_XP, "coins": DARE_COINS}
+                 if snap.in_plan(d) else None),
         "shielded": snap.is_shielded(d),
         "can_shield": snap.in_plan(d) and d < today and bool(snap.tasks(d)) and not snap.is_good(d),
         "journal": {"mood": j.mood, "note": j.note, "struggle": j.struggle} if j else None,
@@ -508,5 +621,52 @@ def summarize(snap: Snapshot, today: date) -> dict:
         "current_streak": current, "longest_streak": longest,
         "tracked_days": len(days), "avg_completion": _avg(pcts), "last7_completion": _avg(last7),
         "quest_count": len(snap.quest_by_id), "journal_entries": len(snap.journal),
+        "dares_done": prog["dares_done"], "bosses_defeated": prog["bosses_defeated"],
         "stat_totals": prog["stat_totals"],
+    }
+
+
+# ---------------------------------------------------------------------------
+# The Hall: an opt-in weekly leaderboard
+# ---------------------------------------------------------------------------
+
+def week_xp(snap: Snapshot, monday: date, today: date) -> int:
+    """XP earned in one Monday-to-Sunday week: quests, perfect days, dares, and the boss if it fell."""
+    xp = 0
+    for d in daterange(monday, monday + timedelta(days=6)):
+        if not snap.in_plan(d) or d > today:
+            continue
+        xp += snap.score(d)["count"] * XP_PER_QUEST
+        if snap.is_perfect(d):
+            xp += XP_PERFECT_BONUS
+        if snap.dare_done(d):
+            xp += DARE_XP
+    week = boss_week(snap, monday, today)
+    if week and week["defeated"]:
+        xp += BOSS_XP
+    return xp
+
+
+def build_board(db: Session, viewer: models.User, today: date, limit: int = 25) -> dict:
+    """Only people who opted in appear. Each row is name, avatar, level, rank letter, streak and week XP."""
+    monday = monday_of(today)
+    members = (db.query(models.User)
+               .filter(models.User.public_board == True, models.User.is_active == True,  # noqa: E712
+                       models.User.onboarded == True).all())
+    snaps = Snapshot.load_many(db, members)
+    rows = []
+    for u in members:
+        snap = snaps[u.id]
+        prog = compute_progress(snap, today)
+        current, _ = compute_streaks(snap, today)
+        rows.append({"name": u.name, "avatar": u.avatar, "level": prog["level"], "rank": prog["rank"],
+                     "streak": current, "week_xp": week_xp(snap, monday, today), "is_me": u.id == viewer.id})
+    rows.sort(key=lambda r: (-r["week_xp"], -r["streak"], r["name"].lower()))
+    for i, r in enumerate(rows, 1):
+        r["place"] = i
+    me = next((r for r in rows if r["is_me"]), None)
+    return {
+        "opted_in": bool(viewer.public_board), "week_start": monday.isoformat(),
+        "week_end": (monday + timedelta(days=6)).isoformat(), "participants": len(rows),
+        "rows": rows[:limit], "me": me,
     }

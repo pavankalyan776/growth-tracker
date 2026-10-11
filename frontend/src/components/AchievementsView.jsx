@@ -3,9 +3,11 @@ import Icon from "./icons";
 import { ShadowArmy } from "./HunterPanel";
 import { api } from "../api";
 import { useGame } from "../game";
+import { useLook } from "../look";
 
 export default function AchievementsView() {
   const { overview: o } = useGame();
+  const { w } = useLook();
   const [items, setItems] = useState(null);
   const [error, setError] = useState("");
   useEffect(() => { api.getMilestones().then(setItems).catch((e) => setError(e.message)); }, []);
@@ -19,7 +21,7 @@ export default function AchievementsView() {
     <div className="stack">
       <section className="panel tone wallet">
         <div>
-          <div className="muted small">Milestones</div>
+          <div className="muted small">{w.milestones}</div>
           <div className="num wallet-num">{earned.length}<small>/{items.length}</small></div>
         </div>
         <p className="muted wallet-note">You have earned <b className="gold-text">{coins} coins</b> from milestones so far. Each one pays out once, the moment you reach it.</p>
@@ -29,8 +31,8 @@ export default function AchievementsView() {
         {items.map((m) => (
           <li key={m.id} className={`badge${m.achieved ? " is-earned" : ""}`}>
             <div className="badge-icon"><Icon name={m.achieved ? "trophy" : "lock"} className="lg" /></div>
-            <b className="display">{m.title}</b>
-            <p className="small muted">{m.desc}</p>
+            <b className="display">{w.style === "calm" && m.calm ? m.calm.title : m.title}</b>
+            <p className="small muted">{w.style === "calm" && m.calm ? m.calm.desc : m.desc}</p>
             <span className={`chip ${m.achieved ? "gold" : ""}`}><Icon name="coin" />{m.achieved ? "Earned" : `+${m.reward}`}</span>
           </li>
         ))}

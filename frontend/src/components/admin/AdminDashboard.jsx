@@ -31,36 +31,36 @@ export default function AdminDashboard() {
   return (
     <div className="stack">
       <div className="tiles five">
-        <Kpi label="Hunters" value={t.users} sub={`${t.admins} admin${t.admins === 1 ? "" : "s"}, ${t.disabled} disabled`} />
+        <Kpi label="Members" value={t.users} sub={`${t.admins} admin${t.admins === 1 ? "" : "s"}, ${t.disabled} disabled`} />
         <Kpi label="Active in 7 days" value={t.active_7d} sub={`${t.active_1d} in the last day`} />
         <Kpi label="New this week" value={t.new_7d} sub={`${t.onboarded} have set up a plan`} />
         <Kpi label="Avg completion, 7 days" value={`${t.avg_completion_7d}%`} sub={`avg streak ${t.avg_streak}`} />
-        <Kpi label="Quests cleared" value={t.quests_cleared} sub="all time, all hunters" />
+        <Kpi label="Tasks completed" value={t.quests_cleared} sub="all time, all members" />
       </div>
 
       <div className="two-col">
         <section className="panel">
           <div className="panel-head"><h3 className="panel-title">People, last 30 days</h3></div>
-          <TimeSeries dates={dates} label="Active hunters and new sign-ups per day for the last 30 days"
+          <TimeSeries dates={dates} label="Active members and new sign-ups per day for the last 30 days"
             series={[
-              { key: "a", label: "Active hunters", color: "var(--cat-1)", values: d.series.map((s) => s.active_hunters) },
+              { key: "a", label: "Active members", color: "var(--cat-1)", values: d.series.map((s) => s.active_hunters) },
               { key: "s", label: "New sign-ups", color: "var(--cat-2)", values: d.series.map((s) => s.signups) },
             ]} />
         </section>
         <section className="panel">
-          <div className="panel-head"><h3 className="panel-title">Quests cleared per day</h3></div>
-          <TimeSeries dates={dates} label="Quests cleared per day for the last 30 days"
-            series={[{ key: "q", label: "Quests cleared", color: "var(--cat-3)", values: d.series.map((s) => s.quests_cleared) }]} />
+          <div className="panel-head"><h3 className="panel-title">Tasks completed per day</h3></div>
+          <TimeSeries dates={dates} label="Tasks completed per day for the last 30 days"
+            series={[{ key: "q", label: "Tasks completed", color: "var(--cat-3)", values: d.series.map((s) => s.quests_cleared) }]} />
         </section>
       </div>
 
       <div className="two-col">
         <section className="panel">
-          <div className="panel-head"><h3 className="panel-title">Where hunters drop off</h3><span className="panel-sub">Share of everyone who registered</span></div>
+          <div className="panel-head"><h3 className="panel-title">Where members drop off</h3><span className="panel-sub">Share of everyone who registered</span></div>
           <CountBars rows={funnelRows} total={t.users} />
         </section>
         <section className="panel">
-          <div className="panel-head"><h3 className="panel-title">Rank distribution</h3><span className="panel-sub">Hunters with a plan in progress</span></div>
+          <div className="panel-head"><h3 className="panel-title">Rank distribution</h3><span className="panel-sub">Members with a plan in progress</span></div>
           <CountBars rows={rankRows} />
         </section>
       </div>
@@ -81,7 +81,7 @@ export default function AdminDashboard() {
         <section className="panel flat privacy">
           <div className="panel-head"><h3 className="panel-title">What this console can't show</h3></div>
           <p className="muted">Admins see account facts and progress numbers so they can spot who needs help and what the product teaches. Journal entries, quest names and passwords are never returned by any admin screen or API route.</p>
-          <p className="muted" style={{ marginTop: 8 }}>Every admin action, including opening a hunter's profile, is written to the audit log.</p>
+          <p className="muted" style={{ marginTop: 8 }}>Every admin action, including opening a member's profile, is written to the audit log.</p>
         </section>
       </div>
     </div>

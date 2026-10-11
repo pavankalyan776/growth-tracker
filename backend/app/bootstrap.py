@@ -1,7 +1,7 @@
 """Startup work: refuse an old database layout, create tables, make sure the admin exists."""
 import logging
 
-from sqlalchemy import inspect
+from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
 from . import config, crud, models, security
@@ -24,6 +24,41 @@ def guard_legacy_schema() -> None:
             raise RuntimeError(
                 "This database was created by Growth Tracker v1/v2 and has no user accounts. " + fix
             )
+
+
+# Columns added after v3 shipped. create_all() builds new TABLES but never alters existing ones,
+# so a v3 database would crash on the first query. These are plain additive ALTERs, safe to repeat.
+ADDED_COLUMNS = [
+    ("users", "avatar", "VARCHAR(20) NOT NULL DEFAULT 'spark'"),
+    ("users", "public_board", "BOOLEAN NOT NULL DEFAULT 0"),
+]
+
+
+def ensure_columns() -> None:
+    insp = inspect(engine)
+    for table, column, ddl in ADDED_COLUMNS:
+        if not insp.has_table(table):
+            continue
+        if column in {c["name"] for c in insp.get_columns(table)}:
+            continue
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE {} ADD COLUMN {} {}".format(table, column, ddl)))
+        log.info("Added column %s.%s", table, column)
+
+
+def migrate_theme_keys(db: Session) -> None:
+    """v3 -> v4: shop colours were renamed. Move equipped themes and purchases to the new keys."""
+    from .shop import LEGACY_KEYS
+    for old, new in LEGACY_KEYS.items():
+        db.query(models.User).filter(models.User.theme_key == old).update({"theme_key": new})
+        for row in db.query(models.Purchase).filter(models.Purchase.item_key == old).all():
+            already = db.query(models.Purchase).filter(models.Purchase.user_id == row.user_id,
+                                                       models.Purchase.item_key == new).first()
+            if already or new == "theme_sprout":      # Sprout is free for everyone: no purchase row needed
+                db.delete(row)
+            else:
+                row.item_key = new
+    db.commit()
 
 
 def ensure_admin(db: Session) -> None:
@@ -51,10 +86,12 @@ def ensure_admin(db: Session) -> None:
 def init_database(session_factory) -> None:
     guard_legacy_schema()
     Base.metadata.create_all(bind=engine)
+    ensure_columns()
     db = session_factory()
     try:
         security.reset_secret_cache()
         security.get_jwt_secret(db)      # create the signing key now, not on the first login
+        migrate_theme_keys(db)
         ensure_admin(db)
     finally:
         db.close()

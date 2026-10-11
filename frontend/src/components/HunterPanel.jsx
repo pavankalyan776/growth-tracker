@@ -1,6 +1,7 @@
 import Icon from "./icons";
 import RankEmblem from "./RankEmblem";
 import Radar from "./Radar";
+import { useLook } from "../look";
 
 function Soldier() {
   return (
@@ -12,42 +13,44 @@ function Soldier() {
 }
 
 export function ShadowArmy({ count }) {
+  const { w } = useLook();
   const shown = Math.min(count, 12);
   return (
     <div className="army">
       <div className="row">
         <b className="num army-count">{count}</b>
-        <span className="muted small">{count === 1 ? "shadow soldier" : "shadow soldiers"}<br />one per perfect day</span>
+        <span className="muted small">{count === 1 ? w.armyUnit : w.armyUnits}<br />{w.armyHint}</span>
       </div>
       <div className="army-row" aria-hidden="true">
-        {Array.from({ length: shown }, (_, i) => <Soldier key={i} />)}
+        {Array.from({ length: shown }, (_, i) => (w.style === "calm" ? <Icon key={i} name="leaf" className="lg sprout" /> : <Soldier key={i} />))}
         {count > shown ? <span className="chip">+{count - shown}</span> : null}
-        {count === 0 ? <span className="faint small">Clear every quest in a day to extract your first.</span> : null}
+        {count === 0 ? <span className="faint small">{w.armyEmpty}</span> : null}
       </div>
     </div>
   );
 }
 
 export default function HunterPanel({ o }) {
+  const { w } = useLook();
   const pct = (o.xp_into_level / o.xp_per_level) * 100;
   return (
     <div className="stack">
-      <section className="panel hunter" aria-label="Hunter status">
+      <section className="panel hunter" aria-label={w.panelStatus}>
         <div className="hunter-head">
           <RankEmblem rank={o.rank} size={92} />
           <div className="grow">
             <h2 className="display hunter-name">{o.hunter_name}</h2>
-            <span className="chip accent">{o.title}</span>
+            <span className="chip accent">{w.style === "calm" ? o.title_calm : o.title}</span>
           </div>
         </div>
 
         <div className="level-block">
-          <div className="row"><b className="display" style={{ fontSize: "1.5rem" }}>Level {o.level}</b><span className="spacer" /><span className="small muted">{o.xp_into_level} / {o.xp_per_level} XP</span></div>
-          <div className="xpbar" role="progressbar" aria-valuenow={o.xp_into_level} aria-valuemin={0} aria-valuemax={o.xp_per_level} aria-label="XP to next level"><i style={{ width: `${pct}%` }} /></div>
+          <div className="row"><b className="display" style={{ fontSize: "1.5rem" }}>{w.levelWord} {o.level}</b><span className="spacer" /><span className="small muted">{o.xp_into_level} / {o.xp_per_level} {w.style === "calm" ? "points" : "XP"}</span></div>
+          <div className="xpbar" role="progressbar" aria-valuenow={o.xp_into_level} aria-valuemin={0} aria-valuemax={o.xp_per_level} aria-label="Progress to next level"><i style={{ width: `${pct}%` }} /></div>
           <p className="small muted">
             {o.next_rank
-              ? `${o.next_rank.xp_to_go} XP to ${o.next_rank.rank}-rank (level ${o.next_rank.level}).`
-              : "Top rank reached. You are the Shadow Monarch."}
+              ? `${o.next_rank.xp_to_go} ${w.style === "calm" ? "points" : "XP"} to ${w.rankLabel(o.next_rank.rank)} (level ${o.next_rank.level}).`
+              : w.topRank}
           </p>
         </div>
 
@@ -58,12 +61,12 @@ export default function HunterPanel({ o }) {
         </dl>
       </section>
 
-      <section className="panel" aria-label="Stats">
-        <div className="panel-head"><h3 className="panel-title">Stats</h3><span className="panel-sub">XP by quest type</span></div>
+      <section className="panel" aria-label={w.statsTitle}>
+        <div className="panel-head"><h3 className="panel-title">{w.statsTitle}</h3><span className="panel-sub">{w.statsSub}</span></div>
         <Radar totals={o.stat_totals} />
       </section>
 
-      <section className="panel sm" aria-label="Shadow army">
+      <section className="panel sm" aria-label={w.armyTitle}>
         <ShadowArmy count={o.perfect_days} />
       </section>
 

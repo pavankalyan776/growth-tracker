@@ -1,0 +1,97 @@
+/* ==========================================================================
+   v4 features: greeting, challenges (dare + boss), the Hall, avatars, appearance pickers
+   ========================================================================== */
+
+/* ---------- Avatar ---------- */
+.avatar { display: inline-grid; place-items: center; flex: none; border-radius: 50%; background: var(--accent); color: var(--on-accent); }
+.avatar svg { fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.avatar-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--s2); max-width: 420px; }
+.avatar-pick { display: grid; place-items: center; padding: 6px; border: 2px solid transparent; border-radius: 50%; background: none; cursor: pointer; transition: border-color .15s, transform .15s var(--ease-spring); }
+.avatar-pick:hover { transform: scale(1.06); }
+.avatar-pick.is-on { border-color: var(--text); box-shadow: 0 0 0 3px var(--accent-glow); }
+
+/* ---------- Greeting ---------- */
+.hello { display: flex; align-items: center; gap: var(--s4); padding: var(--s2) 0 var(--s1); }
+.hello-title { font-size: clamp(1.9rem, 3.6vw, 2.75rem); line-height: 1.02; overflow-wrap: anywhere; }
+.hello p { margin-top: 4px; }
+
+/* ---------- Challenges: coral is the colour of "extra" ---------- */
+.challenges { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s4); }
+.challenge { display: flex; flex-direction: column; gap: var(--s3); padding: var(--s5); background: color-mix(in srgb, var(--coral) 50%, transparent); }
+.challenge::before { background: color-mix(in srgb, var(--obsidian) 93%, var(--coral)); }
+.challenge.is-done { background: color-mix(in srgb, var(--accent) 55%, transparent); }
+.challenge.is-done::before { background: color-mix(in srgb, var(--obsidian) 92%, var(--accent)); }
+.challenge-head { display: flex; align-items: center; gap: var(--s3); }
+.challenge-icon { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--coral); color: #fff; flex: none; }
+.challenge.is-done .challenge-icon { background: var(--accent); color: var(--on-accent); }
+:root[data-mode="dark"] .challenge-icon { color: #2A0C04; }
+.challenge-kicker { font-weight: 700; font-size: var(--step--1); color: var(--coral); letter-spacing: .01em; }
+.challenge.is-done .challenge-kicker { color: var(--accent-text); }
+.challenge-title { font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; line-height: 1.12; margin: 0; }
+.challenge-foot { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; margin-top: auto; padding-top: var(--s2); }
+
+.hp { height: 16px; border-radius: 999px; background: var(--basalt); overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); }
+.hp i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--accent), var(--accent-text)); transition: width .8s var(--ease-out); min-width: 6px; }
+.hp.is-hp i { background: linear-gradient(90deg, var(--red), var(--coral)); }
+.hp-caption { color: var(--text-2); }
+.hp-caption b { color: var(--text); }
+
+/* ---------- The Hall ---------- */
+.wallet-week { font-size: clamp(1.6rem, 3vw, 2.25rem); }
+.join { display: flex; align-items: center; gap: var(--s5); flex-wrap: wrap; }
+.join-title { font-size: 1.6rem; margin-bottom: 6px; }
+.podium { list-style: none; margin: var(--s4) 0 var(--s5); padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s3); align-items: end; max-width: 640px; margin-inline: auto; }
+.podium-slot { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; min-width: 0; }
+.podium-name { overflow-wrap: anywhere; line-height: 1.15; margin-top: 6px; }
+.podium-block { width: 100%; display: grid; place-items: center; margin-top: var(--s2); border-radius: 14px 14px 0 0; background: var(--basalt); font-size: 2.5rem; color: var(--text); }
+.place-1 .podium-block { height: 118px; background: var(--gold-fill); color: #2A1A00; }
+.place-2 .podium-block { height: 84px; }
+.place-3 .podium-block { height: 60px; }
+.podium-xp { font-size: 1.25rem; margin-top: 4px; }
+.podium-slot.is-me .avatar { box-shadow: 0 0 0 3px var(--obsidian), 0 0 0 6px var(--accent); }
+.board { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s2); }
+.board li { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s4); border: 1px solid var(--line); border-radius: 14px; background: var(--void); }
+.board li.is-me { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, var(--void)); box-shadow: 0 0 0 3px var(--accent-glow); }
+.board-place { width: 28px; text-align: center; font-size: 1.4rem; color: var(--text-2); }
+.board-sub { display: flex; gap: var(--s3); align-items: center; flex-wrap: wrap; }
+.board-flame { display: inline-flex; align-items: center; gap: 3px; color: var(--coral); }
+.board-bar { display: block; height: 6px; margin-top: 6px; border-radius: 4px; background: var(--basalt); overflow: hidden; }
+.board-bar i { display: block; height: 100%; border-radius: 4px; background: var(--accent); }
+.board-xp { font-size: 1.4rem; white-space: nowrap; }
+.board-xp small { font-family: var(--font-body); font-size: var(--step--1); color: var(--text-3); font-weight: 600; }
+
+/* ---------- Appearance ---------- */
+.appearance .choices { margin-top: var(--s2); }
+.choices.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.choice b .icon { margin-right: 2px; }
+.appearance-row { gap: var(--s5); align-items: flex-start; }
+.auth-style { margin-left: auto; }
+.auth-style button { min-height: 34px; padding: 0 var(--s3); }
+.sprout { color: var(--accent-text); }
+
+/* Calm: the same things in softer shapes */
+:root[data-style="calm"] .auth-headline { font-size: clamp(2.75rem, 6.2vw, 5.25rem); line-height: 1.04; letter-spacing: -0.02em; margin-left: 0; max-width: 11ch; }
+:root[data-style="calm"] .auth-lede { max-width: 38ch; }
+:root[data-style="calm"] .challenge { background: var(--obsidian); border-color: color-mix(in srgb, var(--coral) 45%, transparent); }
+:root[data-style="calm"] .challenge.is-done { border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+:root[data-style="calm"] .podium-block { border-radius: 16px 16px 0 0; }
+:root[data-style="calm"] .choice, :root[data-style="calm"] .q-card, :root[data-style="calm"] .board li { border-radius: 18px; }
+:root[data-style="calm"] .kpis > div { border-radius: 16px; }
+
+@media (max-width: 860px) {
+  .challenges { grid-template-columns: minmax(0, 1fr); }
+  .hello-title { font-size: 1.75rem; }
+  .podium { gap: var(--s2); }
+  .place-1 .podium-block { height: 96px; }
+  .place-2 .podium-block { height: 68px; }
+  .place-3 .podium-block { height: 48px; }
+  .choices.two { grid-template-columns: minmax(0, 1fr); }
+  .avatar-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* Missed-day banner: let the text keep a readable width and wrap the button below it on phones */
+.breach-body > .grow { flex: 1 1 14rem; min-width: 0; }
+@media (max-width: 640px) {
+  .breach-body .btn { width: 100%; justify-content: center; }
+  .breach-body h2 { font-size: 1.4rem; }
+}

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "./api";
 import { applyAccent } from "./theme";
+import { useLook } from "./look";
 import Icon from "./components/icons";
 
 const GameContext = createContext(null);
@@ -11,14 +12,18 @@ const EVENT_COPY = {
   perfect: { title: "Perfect day", icon: "star" },
   monthly: { title: "Monthly achievement", icon: "trophy" },
   milestone: { title: "Milestone unlocked", icon: "trophy" },
+  dare: { title: "Daily dare", icon: "dice" },
+  boss: { title: "Weekly boss defeated", icon: "swords" },
 };
 
 export function GameProvider({ children }) {
   const [overview, setOverview] = useState(null);
   const [loadError, setLoadError] = useState("");
   const [toasts, setToasts] = useState([]);
-  const [celebration, setCelebration] = useState(null);
+  const [queue, setQueue] = useState([]);
   const nextId = useRef(1);
+  const { w } = useLook();
+  const celebrate = useCallback((c) => setQueue((q) => [...q, c]), []);
 
   const toast = useCallback((t) => {
     const id = nextId.current++;
@@ -29,12 +34,19 @@ export function GameProvider({ children }) {
   const announce = useCallback((events) => {
     (events || []).forEach((e) => {
       const copy = EVENT_COPY[e.kind] || { title: "Reward", icon: "coin" };
+      if (e.kind === "boss") {
+        celebrate({
+          kind: "boss", kicker: w.bossDone, title: e.boss || w.boss,
+          lines: [`+${e.amount} coins`, "+50 XP"],
+        });
+        return;
+      }
       toast({
         kind: "coin", icon: copy.icon, title: `+${e.amount} coins`,
         body: e.kind === "milestone" ? e.reason.replace("Milestone: ", "") : copy.title,
       });
     });
-  }, [toast]);
+  }, [toast, celebrate, w]);
 
   const refresh = useCallback(async () => {
     try {
@@ -53,14 +65,14 @@ export function GameProvider({ children }) {
   useEffect(() => { refresh(); }, [refresh]);
 
   const value = useMemo(() => ({
-    overview, loadError, refresh, announce, toast, celebrate: setCelebration,
-  }), [overview, loadError, refresh, announce, toast]);
+    overview, loadError, refresh, announce, toast, celebrate,
+  }), [overview, loadError, refresh, announce, toast, celebrate]);
 
   return (
     <GameContext.Provider value={value}>
       {children}
       <ToastHost toasts={toasts} dismiss={(id) => setToasts((l) => l.filter((t) => t.id !== id))} />
-      <Celebration data={celebration} onClose={() => setCelebration(null)} />
+      <Celebration data={queue[0] || null} onClose={() => setQueue((q) => q.slice(1))} />
     </GameContext.Provider>
   );
 }
@@ -91,7 +103,7 @@ function Celebration({ data, onClose }) {
   }, [data, onClose]);
   if (!data) return null;
   return (
-    <div className={`celebrate ${data.kind}`} role="dialog" aria-label={data.title} onClick={onClose}>
+    <div key={data.title + data.kicker} className={`celebrate ${data.kind}`} role="dialog" aria-label={data.title} onClick={onClose}>
       <div className="burst" aria-hidden="true"><i /><i /><i /><i /></div>
       <div className="celebrate-copy">
         <div className="celebrate-kicker">{data.kicker}</div>

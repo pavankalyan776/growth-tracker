@@ -2,17 +2,19 @@ import { useCallback, useEffect, useState } from "react";
 import Icon from "./icons";
 import { api } from "../api";
 import { useGame } from "../game";
+import { useLook } from "../look";
 
 function Item({ item, coins, busy, onBuy, onEquip }) {
+  const { w } = useLook();
   const short = item.cost - coins;
   const isTheme = item.kind === "theme";
   return (
     <li className={`relic${item.equipped ? " is-equipped" : ""}`} style={isTheme ? { "--swatch": item.fill } : undefined}>
       <div className="relic-art" aria-hidden="true">
-        {isTheme ? <span className="swatch" /> : <Icon name="swords" className="lg" />}
+        {isTheme ? <span className="swatch" /> : <Icon name={w.style === "calm" ? "star" : "swords"} className="lg" />}
       </div>
       <div className="grow">
-        <b className="display relic-name">{item.label}</b>
+        <b className="display relic-name">{item.kind === "title" && w.style === "calm" ? item.calm : item.label}</b>
         <p className="small muted">{item.desc}</p>
       </div>
       <div className="relic-action">
@@ -55,11 +57,11 @@ export default function ShopView() {
           <div className="muted small">Your coins</div>
           <div className="num wallet-num"><Icon name="coin" className="lg" />{shop.coins}</div>
         </div>
-        <p className="muted wallet-note">Coins come from daily logins (+5), perfect days (+10), monthly achievements (+100) and milestones. Everything here is virtual and cosmetic. Streak shields are bought from a missed day.</p>
+        <p className="muted wallet-note">Coins come from daily logins (+5), perfect days (+10), daily dares (+5), weekly bosses (+40), monthly achievements (+100) and milestones. Everything here is virtual and cosmetic. Streak shields are bought from a missed day.</p>
       </section>
       <div className="two-col">
         <section className="panel">
-          <div className="panel-head"><h3 className="panel-title">Accent themes</h3><span className="panel-sub">Recolour the whole app</span></div>
+          <div className="panel-head"><h3 className="panel-title">Colours</h3><span className="panel-sub">Recolour the whole app</span></div>
           <ul className="relics">{themes.map((i) => <Item key={i.key} item={i} coins={shop.coins} busy={busy}
             onBuy={(it) => act(() => api.buyItem(it.key), `${it.label} unlocked`)} onEquip={(it) => act(() => api.equipItem(it.key), `${it.label} equipped`)} />)}</ul>
         </section>

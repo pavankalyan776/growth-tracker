@@ -9,7 +9,7 @@ function arcPath(cx, cy, r, a0, a1) {
   return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${r} ${r} 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
 }
 
-export default function Gate({ count, total, label = "quests cleared", size = 320, closedText = "Gate cleared", active = null }) {
+export default function Gate({ count, total, label = "quests cleared", size = 320, closedText = "Gate cleared", emptyText = "no quests today", active = null }) {
   const gid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const cleared = total > 0 && count >= total;
   const R = 138, C = 160;
@@ -52,7 +52,7 @@ export default function Gate({ count, total, label = "quests cleared", size = 32
         {total === 0 ? (
           <>
             <span className="num gate-big">0</span>
-            <span className="gate-caption">no quests today</span>
+            <span className="gate-caption">{emptyText}</span>
           </>
         ) : cleared ? (
           <>

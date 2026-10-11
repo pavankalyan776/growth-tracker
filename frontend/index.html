@@ -1,18 +1,21 @@
 <!doctype html>
-<html lang="en" data-mode="dark">
+<html lang="en" data-mode="light" data-style="adventure" data-size="standard">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#0A0B1E" />
-    <meta name="description" content="Growth Tracker: clear your daily gate, keep your streak, rank up from E to S." />
+    <meta name="theme-color" content="#F5F6F2" />
+    <meta name="description" content="Growth Tracker: build daily habits, keep your streak, take on weekly bosses and dares, and level up." />
     <title>Growth Tracker</title>
     <script>
-      // Apply the saved colour mode before first paint so there is no flash of the wrong theme.
+      // Apply the saved look before first paint so there is no flash of the wrong theme.
       try {
-        var m = localStorage.getItem("gt-mode") || "dark";
+        var d = document.documentElement, g = function (k) { return localStorage.getItem(k); };
+        var m = g("gt-mode") || "light";
         if (m === "system") m = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-        document.documentElement.setAttribute("data-mode", m);
+        d.setAttribute("data-mode", m);
+        d.setAttribute("data-style", g("gt-style") === "calm" ? "calm" : "adventure");
+        var z = g("gt-size"); d.setAttribute("data-size", z === "large" || z === "xl" ? z : "standard");
       } catch (e) {}
     </script>
   </head>

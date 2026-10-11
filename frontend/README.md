@@ -1,4 +1,4 @@
-# Frontend: React + Vite (v3)
+# Frontend: React + Vite (v4)
 
 ```bash
 npm install
@@ -22,12 +22,17 @@ src/
   auth.jsx · game.jsx  session state, overview/toasts/celebration
   api.js             every backend call (bearer token, ?today=)
   router.js          tiny hash router (#/today/2026-10-03, #/admin/users)
-  theme.js           Void/Daylight mode + shop accent themes
-  styles/            tokens · base · shell · views · viz
-  components/        Today, Calendar, Progress, Quests, Shop, Achievements, Profile, Onboarding, AuthScreen
-  components/admin/  Console, Hunters table + drawer, Audit
+  look.jsx           Adventure/Calm word lists, text size, useLook()
+  theme.js           brightness (Day/Night/System), style, size, shop colour themes
+  styles/            tokens · base · shell · views · viz · features · calm
+  components/        Today, Challenges (dare + boss), Hall, Calendar, Progress, Quests, Shop, Achievements,
+                     Profile, Appearance, Avatar, Onboarding, AuthScreen
+  components/admin/  Overview, Members table + drawer, Audit
 ```
 
-Fonts are bundled (Big Shoulders Display and Instrument Sans), so nothing loads from Google at runtime.
+Fonts are bundled (Big Shoulders Display, Instrument Sans and Lexend), so nothing loads from Google at runtime.
 Charts are plain SVG. Chart colours are checked for colour-blind separation in both modes, and every chart has
 a readout and a table view.
+
+Look settings (style, brightness, text size) are stored in the browser (`gt-style`, `gt-mode`, `gt-size`) and applied
+before first paint from `index.html`, so there is no flash. Change the default in `src/theme.js` (`DEFAULT_STYLE`).

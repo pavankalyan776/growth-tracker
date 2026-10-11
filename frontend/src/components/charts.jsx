@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { formatLong, formatShort, parseKey } from "../dateUtils";
+import { useStatNames } from "../look";
 
 /* Chart rules used here (see the dataviz notes in extra.css):
    - one hue ramp for magnitude (heatmap), fixed-order categorical hues for the 5 stats
@@ -9,9 +10,6 @@ import { formatLong, formatShort, parseKey } from "../dateUtils";
 
 export const STAT_COLOR = {
   STR: "var(--cat-1)", INT: "var(--cat-2)", PER: "var(--cat-3)", VIT: "var(--cat-4)", AGI: "var(--cat-5)",
-};
-export const STAT_NAME = {
-  STR: "Strength", INT: "Intellect", PER: "Perception", VIT: "Vitality", AGI: "Agility",
 };
 const STATS = ["STR", "INT", "PER", "VIT", "AGI"];
 
@@ -166,9 +164,10 @@ export function WeeklyBars({ weeks }) {
 /* Stat growth: cumulative XP per stat over time (5 categorical lines)  */
 /* ------------------------------------------------------------------ */
 export function StatLines({ growth }) {
+  const { name: STAT_NAME } = useStatNames();
   const [idx, setIdx] = useState(null);
   const [table, setTable] = useState(false);
-  if (!growth || growth.length === 0) return <div className="viz-empty">Your stat curves start after your first tracked day.</div>;
+  if (!growth || growth.length === 0) return <div className="viz-empty">Your growth curves start after your first tracked day.</div>;
 
   const W = 320, H = 150, PL = 30, PR = 10, PT = 10, PB = 22;
   const plotW = W - PL - PR, plotH = H - PT - PB;

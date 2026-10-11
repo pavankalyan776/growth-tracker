@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import Gate from "./Gate";
 import Icon from "./icons";
 import { useAuth } from "../auth";
+import { useLook } from "../look";
 
 /* The hero is a live demo of the product: a Gate that fills quest by quest, closes, and resets. */
-function GateDemo() {
+function GateDemo({ label }) {
   const [n, setN] = useState(0);
   useEffect(() => {
     const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -12,14 +13,21 @@ function GateDemo() {
     const id = window.setTimeout(() => setN((v) => (v >= 7 ? 0 : v + 1)), n === 7 ? 2200 : n === 0 ? 900 : 650);
     return () => window.clearTimeout(id);
   }, [n]);
-  return <Gate count={n} total={7} size={300} label="quests cleared" />;
+  return <Gate count={n} total={7} size={300} label={label} />;
 }
 
-const FACTS = [
-  { icon: "flame", title: "Streaks with teeth", body: "Miss a day and the System notices. A shield can save the streak." },
-  { icon: "coin", title: "Coins you earn", body: "Show up, collect coins, spend them on titles and themes. No real money, ever." },
-  { icon: "trophy", title: "Rank from E to S", body: "Thirteen milestones between your first quest and Shadow Monarch." },
-];
+const FACTS = {
+  adventure: [
+    { icon: "flame", title: "Streaks with teeth", body: "Miss a day and the System notices. A shield can save the streak." },
+    { icon: "swords", title: "Bosses and dares", body: "A weekly boss to beat and a daily dare to try. Optional, and worth it." },
+    { icon: "trophy", title: "Rank from E to S", body: "Nineteen milestones between your first quest and Shadow Monarch." },
+  ],
+  calm: [
+    { icon: "flame", title: "Streaks that keep you going", body: "Do your habits day after day. A streak shield can rescue a missed day." },
+    { icon: "target", title: "Goals and dares", body: "A small daily dare and a weekly goal keep things fresh. Optional, and rewarding." },
+    { icon: "leaf", title: "Grow from Seed to Forest", body: "Nineteen milestones mark your progress. No real money, ever." },
+  ],
+};
 
 const rules = (pw) => [
   { ok: pw.length >= 8, text: "At least 8 characters" },
@@ -28,6 +36,8 @@ const rules = (pw) => [
 
 export default function AuthScreen() {
   const { login, register, notice } = useAuth();
+  const look = useLook();
+  const { w } = look;
   const [mode, setMode] = useState("login");
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [show, setShow] = useState(false);
@@ -57,16 +67,23 @@ export default function AuthScreen() {
         <div className="auth-brand">
           <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 28V14a11 11 0 0 1 22 0v14" /><path d="M11 28V17a5 5 0 0 1 10 0v11" /></svg>
           <span className="display">Growth Tracker</span>
+          <span className="spacer" />
+          <div className="seg auth-style" role="radiogroup" aria-label="Look and feel">
+            {[["adventure", "Adventure"], ["calm", "Calm"]].map(([v, label]) => (
+              <button key={v} type="button" role="radio" aria-checked={look.style === v} aria-pressed={look.style === v}
+                onClick={() => look.setStyle(v)}>{label}</button>
+            ))}
+          </div>
         </div>
         <div className="auth-hero-main">
           <div className="auth-copy">
-            <h1 className="display auth-headline">Arise.</h1>
-            <p className="auth-lede">Your daily routine, run like a dungeon. Clear today's gate, protect the streak, and rank up from E to S.</p>
+            <h1 className="display auth-headline">{w.authHeadline}</h1>
+            <p className="auth-lede">{w.authLede}</p>
           </div>
-          <div className="auth-gate"><GateDemo /></div>
+          <div className="auth-gate"><GateDemo label={w.habitsDone} /></div>
         </div>
         <ul className="auth-facts">
-          {FACTS.map((f) => (
+          {FACTS[look.style].map((f) => (
             <li key={f.title}><Icon name={f.icon} /><div><b>{f.title}</b><span>{f.body}</span></div></li>
           ))}
         </ul>
@@ -78,16 +95,16 @@ export default function AuthScreen() {
             <button type="button" role="tab" aria-selected={!isRegister} onClick={() => { setMode("login"); setError(""); }}>Sign in</button>
             <button type="button" role="tab" aria-selected={isRegister} onClick={() => { setMode("register"); setError(""); }}>Create account</button>
           </div>
-          <h2 className="display auth-title">{isRegister ? "Create your hunter account" : "Welcome back, hunter"}</h2>
+          <h2 className="display auth-title">{isRegister ? w.createTitle : w.welcomeTitle}</h2>
 
           {notice && !error ? <div className="alert info" role="status"><Icon name="info" />{notice}</div> : null}
           {error ? <div className="alert error" role="alert"><Icon name="alert" />{error}</div> : null}
 
           {isRegister && (
             <div className="field">
-              <label htmlFor="name">Hunter name</label>
+              <label htmlFor="name">{w.yourName}</label>
               <input id="name" className="input" value={form.name} onChange={set("name")} autoComplete="nickname" maxLength={20}
-                placeholder="What should the System call you?" required />
+                placeholder={w.namePlaceholder} required />
             </div>
           )}
           <div className="field">

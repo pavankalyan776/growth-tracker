@@ -16,7 +16,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Growth Tracker API", version="3.0.0", lifespan=lifespan)
+app = FastAPI(title="Growth Tracker API", version="4.0.0", lifespan=lifespan)
 
 # Set CORS_ORIGINS on the host to your Vercel URL, e.g. https://growth-tracker.vercel.app
 # (comma-separated for several). Defaults to "*" so local development just works.
@@ -49,4 +49,4 @@ app.include_router(admin.router)
 
 @app.get("/")
 def root():
-    return {"status": "ok", "service": "growth-tracker-api", "version": 3}
+    return {"status": "ok", "service": "growth-tracker-api", "version": 4}

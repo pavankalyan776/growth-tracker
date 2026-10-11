@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
+import Appearance from "./Appearance";
+import Avatar, { AVATARS } from "./Avatar";
 import Icon from "./icons";
 import { api } from "../api";
 import { useAuth } from "../auth";
+import { useLook } from "../look";
 import { addDays, formatFull, getToday, parseKey, toKey } from "../dateUtils";
 
-const STEPS = ["Quests", "Plan window", "Enter"];
+const STEPS = ["Your look", "Starting plan", "Dates", "Begin"];
 
 function defaultEnd(today) {
   const dec31 = new Date(today.getFullYear(), 11, 31);
@@ -13,10 +16,12 @@ function defaultEnd(today) {
 
 export default function Onboarding({ onSkipToAdmin }) {
   const { user, setUser } = useAuth();
+  const { w } = useLook();
+  const [avatar, setAvatar] = useState(user.avatar || "spark");
   const today = useMemo(getToday, []);
   const [step, setStep] = useState(0);
   const [templates, setTemplates] = useState([]);
-  const [template, setTemplate] = useState("exam_ai");
+  const [template, setTemplate] = useState("wellbeing");
   const [start, setStart] = useState(toKey(today));
   const [end, setEnd] = useState(toKey(defaultEnd(today)));
   const [busy, setBusy] = useState(false);
@@ -34,6 +39,7 @@ export default function Onboarding({ onSkipToAdmin }) {
     setBusy(true);
     setError("");
     try {
+      if (avatar !== user.avatar) await api.updateProfile({ avatar });
       setUser(await api.onboard(template, start, end));
     } catch (err) {
       setError(err.message);
@@ -44,7 +50,7 @@ export default function Onboarding({ onSkipToAdmin }) {
   return (
     <div className="onboard">
       <div className="onboard-inner">
-        <p className="system-line"><span className="chip cyan"><Icon name="sparkle" />System</span> Player detected, {user.name}. Configure your dungeon.</p>
+        <p className="system-line"><span className="chip cyan"><Icon name="sparkle" />{w.coach}</span> {w.setupLine(user.name)}</p>
         <ol className="steps" aria-label="Setup progress">
           {STEPS.map((s, i) => (
             <li key={s} className={i === step ? "is-current" : i < step ? "is-done" : ""} aria-current={i === step ? "step" : undefined}>
@@ -56,22 +62,41 @@ export default function Onboarding({ onSkipToAdmin }) {
         <div className="panel onboard-card">
           {step === 0 && (
             <>
-              <h2 className="display">Pick your starting quests</h2>
-              <p className="muted">You can edit every quest later. This just saves you the typing.</p>
-              <div className="choices" role="radiogroup" aria-label="Quest template">
+              <h2 className="display">Make it yours</h2>
+              <p className="muted">You can change all of this later in Profile.</p>
+              <Appearance />
+              <div className="field">
+                <span className="label" id="ob-avatar">Pick an avatar</span>
+                <div className="avatar-grid" role="radiogroup" aria-labelledby="ob-avatar">
+                  {AVATARS.map((a) => (
+                    <button key={a} type="button" role="radio" aria-checked={avatar === a} aria-label={a}
+                      className={`avatar-pick${avatar === a ? " is-on" : ""}`} onClick={() => setAvatar(a)}>
+                      <Avatar name={user.name} avatar={a} size={44} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {step === 1 && (
+            <>
+              <h2 className="display">{w.pickHabits}</h2>
+              <p className="muted">{`You can edit every ${w.habit} later. This just saves you the typing.`}</p>
+              <div className="choices" role="radiogroup" aria-label="Starting plan">
                 {templates.map((t) => (
                   <button key={t.key} type="button" role="radio" aria-checked={template === t.key}
                     className={`choice${template === t.key ? " is-on" : ""}`} onClick={() => setTemplate(t.key)}>
                     <b className="display">{t.label}</b>
                     <span>{t.desc}</span>
-                    <small className="chip">{t.quests === 0 ? "No quests yet" : `${t.quests} quests across the week`}</small>
+                    <small className="chip">{t.quests === 0 ? `No ${w.habitsLower} yet` : `${t.quests} ${w.habitsLower} across the week`}</small>
                   </button>
                 ))}
               </div>
             </>
           )}
 
-          {step === 1 && (
+          {step === 2 && (
             <>
               <h2 className="display">Set your plan window</h2>
               <p className="muted">Streaks, XP and coins only count inside this window. Start in the past to log days you've already done.</p>
@@ -90,12 +115,12 @@ export default function Onboarding({ onSkipToAdmin }) {
             </>
           )}
 
-          {step === 2 && (
+          {step === 3 && (
             <>
-              <h2 className="display">Ready to enter the gate</h2>
+              <h2 className="display">{w.readyTitle}</h2>
               <dl className="summary">
-                <div><dt>Hunter</dt><dd>{user.name}</dd></div>
-                <div><dt>Quests</dt><dd>{chosen ? chosen.label : template}</dd></div>
+                <div><dt>Name</dt><dd>{user.name}</dd></div>
+                <div><dt>{w.habits}</dt><dd>{chosen ? chosen.label : template}</dd></div>
                 <div><dt>Plan</dt><dd>{formatFull(parseKey(start))} to {formatFull(parseKey(end))}</dd></div>
                 <div><dt>Length</dt><dd>{days} days</dd></div>
               </dl>
@@ -105,10 +130,10 @@ export default function Onboarding({ onSkipToAdmin }) {
 
           <div className="onboard-actions">
             {step > 0 ? <button type="button" className="btn ghost" onClick={() => setStep(step - 1)} disabled={busy}>Back</button> : <span />}
-            {step < 2 ? (
-              <button type="button" className="btn" onClick={() => setStep(step + 1)} disabled={step === 1 && !!planError}>Continue</button>
+            {step < 3 ? (
+              <button type="button" className="btn" onClick={() => setStep(step + 1)} disabled={step === 2 && !!planError}>Continue</button>
             ) : (
-              <button type="button" className="btn" onClick={finish} disabled={busy}>{busy ? "Opening the gate…" : "Enter the gate"}</button>
+              <button type="button" className="btn" onClick={finish} disabled={busy}>{busy ? "One moment…" : w.enter}</button>
             )}
           </div>
         </div>

@@ -48,17 +48,20 @@ def _load_world(db: Session) -> Dict[str, Any]:
         comp_count_by_day[d] += 1
     for uid, d in db.query(models.Shield.user_id, models.Shield.date).all():
         shields[uid].append(d)
+    dares = defaultdict(list)
+    for uid, d in db.query(models.DareDone.user_id, models.DareDone.date).all():
+        dares[uid].append(d)
     # Only the DATE of each journal entry is loaded. The text never leaves the database here.
     for uid, d in db.query(models.Journal.user_id, models.Journal.date).all():
         journal[uid][d] = True
-    return {"quests": quests, "comps": comps, "shields": shields, "journal": journal,
+    return {"quests": quests, "comps": comps, "shields": shields, "journal": journal, "dares": dares,
             "active_by_day": comp_by_day, "count_by_day": comp_count_by_day}
 
 
 def _snapshot_for(user: models.User, world: Dict[str, Any]) -> game_logic.Snapshot:
     return game_logic.Snapshot(user.plan_start, user.plan_end, world["quests"].get(user.id, []),
                                world["comps"].get(user.id, []), world["shields"].get(user.id, []),
-                               world["journal"].get(user.id, {}))
+                               world["journal"].get(user.id, {}), world["dares"].get(user.id, []), user.id)
 
 
 def _row(user: models.User, world: Dict[str, Any], today: date) -> dict:

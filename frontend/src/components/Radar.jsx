@@ -1,9 +1,11 @@
-import { STAT_COLOR, STAT_NAME } from "./charts";
+import { STAT_COLOR } from "./charts";
+import { useStatNames } from "../look";
 
 const KEYS = ["STR", "INT", "PER", "VIT", "AGI"];
 
 /* Stat radar. Five axes, each tick coloured with its stat hue; values are also listed in text below. */
 export default function Radar({ totals }) {
+  const { name: STAT_NAME, short } = useStatNames();
   const max = Math.max(...KEYS.map((k) => totals[k] || 0), 1);
   const cx = 110, cy = 104, R = 70;
   const ang = (i) => ((-90 + i * 72) * Math.PI) / 180;
@@ -27,7 +29,7 @@ export default function Radar({ totals }) {
         })}
         {KEYS.map((k, i) => {
           const [x, y] = pt(i, 1.3);
-          return <text key={k} x={x} y={y} textAnchor="middle" dominantBaseline="middle" className="radar-label">{k}</text>;
+          return <text key={k} x={x} y={y} textAnchor="middle" dominantBaseline="middle" className="radar-label">{short[k]}</text>;
         })}
       </svg>
       <ul className="stat-list">

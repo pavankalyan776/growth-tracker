@@ -218,7 +218,7 @@ def test_onboarding_validates_the_plan(signup):
 
 def test_templates_are_listed_publicly(raw):
     keys = [t["key"] for t in raw.get("/api/templates").json()]
-    assert keys == ["exam_ai", "focus", "blank"]
+    assert keys == ["wellbeing", "student", "exam_ai", "focus", "blank"]
 
 
 # ---------------------------------------------------------------------------

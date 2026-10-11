@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AuthScreen from "./components/AuthScreen";
 import Onboarding from "./components/Onboarding";
 import Shell from "./components/Shell";
@@ -13,30 +13,35 @@ import ProfileView from "./components/ProfileView";
 import AdminDashboard from "./components/admin/AdminDashboard";
 import AdminUsers from "./components/admin/AdminUsers";
 import AdminAudit from "./components/admin/AdminAudit";
+import HallView from "./components/HallView";
 import { AuthProvider, useAuth } from "./auth";
+import { LookProvider, useLook } from "./look";
 import { GameProvider, useGame } from "./game";
 import { useRoute } from "./router";
 
-const TRACKER_PAGES = {
-  today: { title: "Today", sub: "Clear the gate before midnight" },
+const trackerPages = (w) => ({
+  today: { title: "Today", sub: w.todaySub },
   calendar: { title: "Calendar", sub: "Tap a day to open it" },
   progress: { title: "Progress", sub: "How you are really doing" },
-  quests: { title: "Quests", sub: "Your daily templates" },
-  shop: { title: "Shop", sub: "Spend coins on cosmetics" },
-  achievements: { title: "Trophies", sub: "Milestones and your shadow army" },
-};
-const OTHER_PAGES = {
+  hall: { title: w.hall, sub: w.hallSub },
+  quests: { title: w.habits, sub: w.habitsSub },
+  shop: { title: w.rewards, sub: w.rewardsSub },
+  achievements: { title: w.milestones, sub: w.milestonesSub },
+});
+const otherPages = (w) => ({
   profile: { title: "Profile", sub: "Account and settings" },
-  admin: { title: "Admin console", sub: "How the product is being used" },
-  "admin/users": { title: "Hunters", sub: "Everyone with an account" },
+  admin: { title: "Admin overview", sub: "How the product is being used" },
+  "admin/users": { title: w.members, sub: w.membersSub },
   "admin/audit": { title: "Audit log", sub: "Who did what, and when" },
-};
+});
 
 export default function App() {
   return (
-    <AuthProvider>
-      <Root />
-    </AuthProvider>
+    <LookProvider>
+      <AuthProvider>
+        <Root />
+      </AuthProvider>
+    </LookProvider>
   );
 }
 
@@ -91,8 +96,10 @@ function Frame({ route, onSetup }) {
   const game = useGame();
   const trackerReady = user.onboarded;
   const isAdmin = user.role === "admin";
+  const { w } = useLook();
+  const TRACKER_PAGES = useMemo(() => trackerPages(w), [w]);
   const key = route.name === "admin" && route.param ? `admin/${route.param}` : route.name;
-  const page = TRACKER_PAGES[key] || OTHER_PAGES[key];
+  const page = TRACKER_PAGES[key] || otherPages(w)[key];
 
   // Anything unknown, or admin pages for non-admins, falls back to the home page.
   useEffect(() => {
@@ -121,6 +128,7 @@ function Frame({ route, onSetup }) {
   } else if (key === "calendar") body = <CalendarView route={route} />;
   else if (key === "progress") body = <ProgressView route={route} />;
   else if (key === "quests") body = <QuestManager />;
+  else if (key === "hall") body = <HallView />;
   else if (key === "shop") body = <ShopView />;
   else if (key === "achievements") body = <AchievementsView />;
   else if (key === "profile") body = <ProfileView trackerReady={trackerReady} />;

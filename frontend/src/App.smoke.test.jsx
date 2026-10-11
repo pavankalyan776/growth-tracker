@@ -30,7 +30,7 @@ async function signIn(mail, password) {
   fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
 }
 
-describe("Growth Tracker v3", () => {
+describe("Growth Tracker v4", () => {
   it("shows the sign-in screen to a stranger", async () => {
     render(<App />);
     expect(await screen.findByRole("heading", { name: /Welcome back, hunter/i })).toBeTruthy();
@@ -45,7 +45,9 @@ describe("Growth Tracker v3", () => {
     type("Password", "Smoke1234pass");
     fireEvent.click(screen.getByRole("button", { name: "Create account" }));
 
-    // onboarding: template -> window -> enter
+    // onboarding: look -> template -> window -> enter
+    expect(await screen.findByText(/Make it yours/i)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
     expect(await screen.findByText(/Pick your starting quests/i)).toBeTruthy();
     fireEvent.click(await screen.findByRole("radio", { name: /Exam \+ AI Engineer/i }));
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
@@ -62,7 +64,25 @@ describe("Growth Tracker v3", () => {
     await waitFor(() => expect(screen.getAllByRole("checkbox")[0].getAttribute("aria-checked")).toBe("true"));
 
     // a normal hunter never sees the admin console
-    expect(screen.queryByText("Console")).toBeNull();
+    expect(screen.queryByText("Overview")).toBeNull();
+  });
+
+  it("clears a daily dare, then switches to the Calm look with plain words", async () => {
+    await signIn(email, "Smoke1234pass");
+    const dare = await screen.findByRole("button", { name: /I did it/i });
+    fireEvent.click(dare);
+    await waitFor(() => expect(screen.getAllByRole("button", { pressed: true }).length).toBeGreaterThan(0));
+
+    fireEvent.click(screen.getByRole("button", { name: /Switch to Calm/i }));
+    expect(await screen.findAllByText(/habits/i)).not.toHaveLength(0);
+    expect(document.documentElement.getAttribute("data-style")).toBe("calm");
+  });
+
+  it("shows the Hall with an opt-in, not a public list", async () => {
+    await signIn(email, "Smoke1234pass");
+    await screen.findAllByRole("checkbox");
+    window.location.hash = "#/hall";
+    expect(await screen.findByText(/Want to compete with friends/i)).toBeTruthy();
   });
 
   it("rejects a wrong password with a plain message", async () => {
@@ -76,9 +96,9 @@ describe("Growth Tracker v3", () => {
     // the admin has no hunter plan yet, so the gate offers a way straight to the console
     const skip = await screen.findByRole("button", { name: /open the admin console/i });
     fireEvent.click(skip);
-    const consoleLink = await screen.findAllByText("Console");
-    expect(consoleLink.length).toBeGreaterThan(0);
-    fireEvent.click(consoleLink[0]);
+    const overviewLink = await screen.findAllByText("Overview");
+    expect(overviewLink.length).toBeGreaterThan(0);
+    fireEvent.click(overviewLink[0]);
     expect(await screen.findByText(/What this console can't show/i)).toBeTruthy();
   });
 });

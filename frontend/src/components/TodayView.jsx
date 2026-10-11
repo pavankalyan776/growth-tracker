@@ -1,28 +1,37 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Avatar from "./Avatar";
+import { BossCard, DareCard } from "./Challenges";
 import Gate from "./Gate";
 import HunterPanel from "./HunterPanel";
 import Icon from "./icons";
-import { STAT_COLOR, STAT_NAME } from "./charts";
+import { STAT_COLOR } from "./charts";
 import { api } from "../api";
 import { useGame } from "../game";
+import { useLook, useStatNames } from "../look";
 import { addDays, formatLong, getToday, inBlock, nowMinutes, parseBlock, parseKey, sameDay, toKey } from "../dateUtils";
 
 const MOODS = [["1", "Rough"], ["2", "Low"], ["3", "Okay"], ["4", "Good"], ["5", "Great"]];
 
-function systemMessage({ day, isToday, o, nextTask, isFuture, count, total }) {
+function systemMessage({ day, isToday, o, nextTask, isFuture, count, total, w }) {
   if (!day.in_plan) return "This day is outside your plan window. Change the window in Profile if you want to track it.";
-  if (total === 0) return "No quests are set for this day. Add some in Quests.";
-  if (isFuture) return "This gate hasn't opened yet. It unlocks at midnight.";
-  if (count >= total) return isToday ? "Gate cleared. XP banked. Rest well, hunter." : "This gate was cleared. Well fought.";
-  if (isToday && o.streak_at_risk) return `Clear every quest today to keep your ${o.current_streak}-day streak.`;
-  if (count === 0) return isToday ? `The gate is open. ${total} quests stand between you and a clean day.` : "This gate was left open.";
+  if (total === 0) return `No ${w.habitsLower} are set for this day. Add some in ${w.habits}.`;
+  if (isFuture) return w.futureLine;
+  if (count >= total) return w.doneLine(isToday);
+  if (isToday && o.streak_at_risk) return `Finish every ${w.habit} today to keep your ${o.current_streak}-day streak.`;
+  if (count === 0) return w.openLine(isToday, total);
   return nextTask && isToday
     ? `${count} down, ${total - count} to go. Next up: ${nextTask.label}.`
     : `${count} down, ${total - count} to go.`;
 }
 
+function greeting(hour) {
+  return hour < 5 ? "Still up" : hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : hour < 22 ? "Good evening" : "Late night";
+}
+
 export default function TodayView({ dateKey, route }) {
   const { overview: o, refresh, announce, celebrate, toast } = useGame();
+  const { w } = useLook();
+  const { name: STAT_NAME } = useStatNames();
   const today = useMemo(getToday, []);
   const selected = dateKey ? parseKey(dateKey) : today;
   const key = toKey(selected);
@@ -74,11 +83,11 @@ export default function TodayView({ dateKey, route }) {
         const lines = [`+${res.xp_delta} XP`];
         const coins = (res.events || []).reduce((s, e) => s + e.amount, 0);
         if (coins > 0) lines.push(`+${coins} coins`);
-        if (res.rank_up) lines.push(`Rank ${res.rank}`);
+        if (res.rank_up) lines.push(w.rankNamed(res.rank));
         else if (res.level_up) lines.push(`Level ${res.level}`);
-        celebrate({ kind: res.rank_up ? "rank" : "gate", kicker: res.rank_up ? "The System acknowledges you" : isToday ? "Daily dungeon" : formatLong(selected), title: res.rank_up ? `Rank ${res.rank}` : "Gate cleared", lines });
+        celebrate({ kind: res.rank_up ? "rank" : "gate", kicker: res.rank_up ? w.rankKicker : isToday ? w.welcomeKicker : formatLong(selected), title: res.rank_up ? w.rankNamed(res.rank) : w.dayCleared, lines });
       } else if ((res.rank_up || res.level_up) && want) {
-        toast({ kind: "level", icon: "bolt", title: res.rank_up ? `Rank up: ${res.rank}` : `Level ${res.level}`, body: "Keep going." });
+        toast({ kind: "level", icon: "bolt", title: res.rank_up ? `${w.rankUp}: ${w.rankLabel(res.rank)}` : `Level ${res.level}`, body: "Keep going." });
       }
       await refresh();
       if (!want || res.day_cleared) load();
@@ -103,20 +112,34 @@ export default function TodayView({ dateKey, route }) {
   };
 
   const go = (delta) => route.navigate(`today/${toKey(addDays(selected, delta))}`);
-  const message = day && o ? systemMessage({ day, isToday, o, nextTask, isFuture, count, total }) : "";
+  const message = day && o ? systemMessage({ day, isToday, o, nextTask, isFuture, count, total, w }) : "";
   const dayXp = count * 10 + (total > 0 && count === total ? 20 : 0);
 
   if (!o) return <TodaySkeleton />;
 
+  const hour = new Date().getHours();
+  const showBoss = isToday && o.boss;
+  const showDare = day && day.dare && !isFuture;
+
   return (
     <div className="today-grid">
       <div className="stack today-main">
+        {isToday && (
+          <header className="hello">
+            <Avatar name={o.hunter_name} avatar={o.avatar} size={60} />
+            <div className="grow">
+              <h2 className="display hello-title">{greeting(hour)}, {o.hunter_name}</h2>
+              <p className="muted">{w.style === "calm" ? o.title_calm : o.title}. {w.levelWord} {o.level}, {w.rankLabel(o.rank)}.</p>
+            </div>
+          </header>
+        )}
+
         {isToday && o.penalty && (
           <section className="panel danger breach" role="alert" aria-label="Breach">
             <div className="breach-body">
               <Icon name="alert" className="lg" />
               <div className="grow">
-                <h2 className="display">Breach: yesterday's gate was left open</h2>
+                <h2 className="display">{w.breach}</h2>
                 <p>You cleared {o.penalty.pct}% on {formatLong(parseKey(o.penalty.date))}. Your streak was reset to zero.</p>
               </div>
               {o.coins >= o.shield_cost ? (
@@ -135,11 +158,11 @@ export default function TodayView({ dateKey, route }) {
           </section>
         )}
 
-        <section className="panel tone gate-hero" aria-label="Daily gate">
+        <section className="panel tone gate-hero" aria-label={w.dayLabel}>
           <div className="gate-hero-top">
             <div>
               <h2 className="display day-title">{formatLong(selected)}</h2>
-              <p className="muted">{isToday ? "Today's gate" : isFuture ? "Upcoming gate" : "Past gate"}</p>
+              <p className="muted">{isToday ? w.dayName : isFuture ? w.dayFuture : w.dayPast}</p>
             </div>
             <div className="row">
               {!isToday && <button type="button" className="btn ghost sm" onClick={() => route.navigate("today")}>Back to today</button>}
@@ -153,9 +176,9 @@ export default function TodayView({ dateKey, route }) {
 
           {day && (
             <div className="gate-hero-body">
-              <Gate count={count} total={total} size={300} active={activeIdx} />
+              <Gate count={count} total={total} size={300} active={activeIdx} label={w.habitsDone} closedText={w.dayCleared} emptyText={w.noHabitsToday} />
               <div className="gate-info">
-                <p className="system-message" aria-live="polite"><span className="chip cyan"><Icon name="sparkle" />System</span>{message}</p>
+                <p className="system-message" aria-live="polite"><span className="chip cyan"><Icon name="sparkle" />{w.coach}</span>{message}</p>
                 <div className="row wrap">
                   {day.in_plan && total > 0 && !isFuture && <span className="chip accent"><Icon name="bolt" />+{dayXp} XP {isToday ? "today" : "that day"}</span>}
                   {day.in_plan && o.plan.day > 0 && isToday && <span className="chip">Day {Math.min(o.plan.day, o.plan.days)} of {o.plan.days}</span>}
@@ -183,13 +206,20 @@ export default function TodayView({ dateKey, route }) {
           )}
         </section>
 
-        <section className="panel timeline-panel" aria-label="Quests">
-          <div className="panel-head"><h3 className="panel-title">Quests</h3>
-            {day && total > 0 ? <span className="panel-sub">{count} of {total} cleared</span> : null}</div>
+        {(showDare || showBoss) && (
+          <div className="challenges">
+            {showBoss && <BossCard boss={o.boss} />}
+            {showDare && <DareCard key={day.date} dare={day.dare} dateKey={day.date} isToday={isToday} onChanged={load} />}
+          </div>
+        )}
+
+        <section className="panel timeline-panel" aria-label={w.habits}>
+          <div className="panel-head"><h3 className="panel-title">{w.habits}</h3>
+            {day && total > 0 ? <span className="panel-sub">{count} of {total} {w.cleared}</span> : null}</div>
           {!day ? (
             <div className="stack">{[0, 1, 2, 3].map((i) => <div key={i} className="skel" style={{ height: 64 }} />)}</div>
           ) : total === 0 ? (
-            <div className="empty"><div className="display">Nothing scheduled</div>Add quests for this day type in <a href="#/quests">Quests</a>.</div>
+            <div className="empty"><div className="display">Nothing scheduled</div>Add {w.habitsLower} for this day type in <a href="#/quests">{w.habits}</a>.</div>
           ) : (
             <ol className="timeline">
               {tasks.map((t, i) => {
@@ -236,6 +266,7 @@ function TodaySkeleton() {
 
 function JournalCard({ dateKey, initial, onSaved }) {
   const { toast } = useGame();
+  const { w } = useLook();
   const [mood, setMood] = useState(initial ? initial.mood : null);
   const [note, setNote] = useState(initial ? initial.note : "");
   const [struggle, setStruggle] = useState(initial ? initial.struggle : "");
@@ -279,7 +310,7 @@ function JournalCard({ dateKey, initial, onSaved }) {
       <div className="field"><label htmlFor={`note-${dateKey}`}>What happened?</label>
         <textarea id={`note-${dateKey}`} className="textarea" value={note} onChange={dirty(note, setNote)} maxLength={2000} placeholder="Wins, surprises, anything worth remembering." /></div>
       <div className="field"><label htmlFor={`hard-${dateKey}`}>What was hard?</label>
-        <textarea id={`hard-${dateKey}`} className="textarea" value={struggle} onChange={dirty(struggle, setStruggle)} maxLength={2000} placeholder="Pain is data. Write it down so you can beat it." /></div>
+        <textarea id={`hard-${dateKey}`} className="textarea" value={struggle} onChange={dirty(struggle, setStruggle)} maxLength={2000} placeholder={w.style === "calm" ? "Anything that got in the way, so you can plan around it." : "Pain is data. Write it down so you can beat it."} /></div>
       <div className="row">
         <button type="button" className="btn" onClick={save} disabled={busy || (!mood && !note.trim() && !struggle.trim())}>{busy ? "Saving…" : "Save log"}</button>
         {saved && initial !== undefined ? <span className="chip cyan"><Icon name="check" />Saved</span> : null}

@@ -1,7 +1,12 @@
 /* ==========================================================================
-   Design tokens: "Arise"
-   Colour has a job. Violet = progress & primary action. Cyan = "now" / live.
-   Gold = coins. Red = breaches & destructive. Nothing else gets a hue.
+   Design tokens, v4 "Daybreak"
+   Light is the default and the dark mode ("Night") is a warm charcoal, never navy.
+   Colour has a job:
+     accent (your chosen colour) = progress, primary actions
+     sky   = "now" / live            gold  = coins            coral = challenges (dare, boss)
+     red   = missed days, destructive actions
+   Names kept from v3 so every component keeps working:
+     --void canvas, --obsidian panels, --basalt sunken surfaces
    ========================================================================== */
 
 :root {
@@ -9,85 +14,103 @@
   --font-display: "Big Shoulders Display Variable", "Arial Narrow", Impact, sans-serif;
   --font-body: "Instrument Sans Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
 
-  --step--1: 0.8125rem;   /* 13 */
-  --step-0: 0.9375rem;    /* 15 */
-  --step-1: 1.125rem;     /* 18 */
-  --step-2: 1.5rem;       /* 24 */
-  --step-3: 2.125rem;     /* 34 */
-  --step-4: 3.25rem;      /* 52 */
+  /* scale: body is 16px, nothing readable is under 14px. The whole scale grows with the Text size setting. */
+  --step--1: 0.875rem;    /* 14 */
+  --step-0: 1rem;         /* 16 */
+  --step-1: 1.1875rem;    /* 19 */
+  --step-2: 1.625rem;     /* 26 */
+  --step-3: 2.25rem;      /* 36 */
+  --step-4: 3.5rem;       /* 56 */
 
   /* space (4px base) */
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px; --s8: 72px;
 
-  --cut: 14px;            /* the signature cut corner on big panels */
+  --cut: 14px;            /* Adventure: the cut corner on big panels */
   --cut-sm: 8px;
-  --radius: 10px;
+  --radius: 12px;
 
-  --rail-w: 84px;
-  --topbar-h: 64px;
+  --rail-w: 92px;
+  --topbar-h: 68px;
   --content-max: 1280px;
 
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  /* accent (overwritten at runtime from the equipped shop theme) */
-  --accent: #6F4DFF;
-  --accent-text: #A58FFF;
+  /* accent: overwritten at runtime from the equipped colour (see theme.js) */
+  --accent: #0B7A64;
+  --accent-text: #0B7A64;
   --on-accent: #FFFFFF;
-  --accent-glow: rgba(111, 77, 255, 0.30);
+  --accent-glow: rgba(44, 201, 165, 0.28);
 }
 
-/* ---------- Void (dark, default) ---------- */
-:root, :root[data-mode="dark"] {
+/* ---------- Daylight (light, the default) ---------- */
+:root, :root[data-mode="light"] {
+  color-scheme: light;
+  --void: #F5F6F2;
+  --obsidian: #FFFFFF;
+  --basalt: #ECEEE8;
+  --line: rgba(28, 36, 32, 0.12);
+  --line-strong: rgba(28, 36, 32, 0.28);
+  --text: #1C2420;
+  --text-2: #4A554F;
+  --text-3: #5E6A63;
+  --cyan: #0B6EA8;
+  --gold: #8A5300;            /* gold as TEXT */
+  --gold-fill: #F5A300;       /* gold as a fill or icon */
+  --coral: #BD3A0C;
+  --red: #C01E45;
+  --red-text: #B01B3F;
+  --red-tint: rgba(192, 30, 69, 0.08);
+  --gold-tint: rgba(245, 163, 0, 0.16);
+  --cyan-tint: rgba(11, 110, 168, 0.09);
+  --coral-tint: rgba(189, 58, 12, 0.08);
+  --shadow: 0 14px 40px rgba(28, 36, 32, 0.14);
+  --card-shadow: 0 1px 2px rgba(28, 36, 32, 0.06), 0 6px 18px rgba(28, 36, 32, 0.06);
+  --tone: rgba(28, 36, 32, 0.07);       /* screentone dots */
+
+  /* chart palette: five stat hues in fixed order. Heatmap ramp is built from the accent. */
+  --cat-1: #2a78d6; --cat-2: #eb6834; --cat-3: #1baf7a; --cat-4: #eda100; --cat-5: #e87ba4;
+  --series-1: var(--accent);
+  --viz-grid: rgba(28, 36, 32, 0.10); --viz-axis: rgba(28, 36, 32, 0.30); --viz-muted: #5E6A63;
+  --hm-0: #E3E6DF;
+  --hm-1: color-mix(in srgb, var(--accent) 22%, var(--obsidian));
+  --hm-2: color-mix(in srgb, var(--accent) 45%, var(--obsidian));
+  --hm-3: color-mix(in srgb, var(--accent) 72%, var(--obsidian));
+  --hm-4: var(--accent);
+  --scrim: rgba(28, 36, 32, 0.45);
+}
+
+/* ---------- Night (dark: warm charcoal) ---------- */
+:root[data-mode="dark"] {
   color-scheme: dark;
-  --void: #0A0B1E;
-  --obsidian: #12143A;
-  --basalt: #1C1F52;
-  --line: rgba(150, 160, 255, 0.16);
-  --line-strong: rgba(150, 160, 255, 0.34);
-  --text: #ECEEFF;
-  --text-2: #A9AEDD;
-  --text-3: #8E94CC;
-  --cyan: #36D6FF;
+  --void: #161513;
+  --obsidian: #201E1B;
+  --basalt: #2B2825;
+  --line: rgba(245, 242, 236, 0.12);
+  --line-strong: rgba(245, 242, 236, 0.30);
+  --text: #F5F2EC;
+  --text-2: #C2BBB0;
+  --text-3: #A39C91;
+  --cyan: #5CC2F2;
   --gold: #FFC247;
+  --gold-fill: #FFC247;
+  --coral: #FF8566;
   --red: #FF4F6B;
   --red-text: #FF7A90;
-  --red-tint: rgba(255, 79, 107, 0.12);
-  --gold-tint: rgba(255, 194, 71, 0.12);
-  --cyan-tint: rgba(54, 214, 255, 0.12);
-  --shadow: 0 18px 50px rgba(2, 3, 20, 0.55);
-  --tone: rgba(160, 170, 255, 0.10);      /* screentone dots */
+  --red-tint: rgba(255, 79, 107, 0.13);
+  --gold-tint: rgba(255, 194, 71, 0.13);
+  --cyan-tint: rgba(92, 194, 242, 0.12);
+  --coral-tint: rgba(255, 133, 102, 0.13);
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+  --tone: rgba(245, 242, 236, 0.07);
 
-  /* chart palette: five stat hues in fixed order + one violet ramp for magnitude */
   --cat-1: #4C94F0; --cat-2: #F07A45; --cat-3: #22C58B; --cat-4: #F2B01E; --cat-5: #F08AB4;
-  --series-1: #8A72FF;
-  --viz-grid: rgba(150, 160, 255, 0.14); --viz-axis: rgba(150, 160, 255, 0.34); --viz-muted: #8E94CC;
-  --hm-0: #1C1F52; --hm-1: #3A2F8F; --hm-2: #5B45D6; --hm-3: #8A72FF; --hm-4: #C9BEFF;
+  --viz-grid: rgba(245, 242, 236, 0.12); --viz-axis: rgba(245, 242, 236, 0.30); --viz-muted: #A39C91;
+  --hm-0: #2B2825;
+  --scrim: rgba(8, 7, 6, 0.66);
 }
 
-/* ---------- Daylight (light) ---------- */
-:root[data-mode="light"] {
-  color-scheme: light;
-  --void: #F2F3FA;
-  --obsidian: #FFFFFF;
-  --basalt: #E8EAF7;
-  --line: rgba(18, 20, 58, 0.12);
-  --line-strong: rgba(18, 20, 58, 0.30);
-  --text: #12143A;
-  --text-2: #4A4F86;
-  --text-3: #5F6496;
-  --cyan: #0A7FA6;
-  --gold: #B27800;
-  --red: #D1264B;
-  --red-text: #C01F44;
-  --red-tint: rgba(209, 38, 75, 0.09);
-  --gold-tint: rgba(178, 120, 0, 0.10);
-  --cyan-tint: rgba(10, 127, 166, 0.10);
-  --shadow: 0 14px 40px rgba(30, 34, 90, 0.14);
-  --tone: rgba(18, 20, 58, 0.09);
-
-  --cat-1: #2a78d6; --cat-2: #eb6834; --cat-3: #1baf7a; --cat-4: #eda100; --cat-5: #e87ba4;
-  --series-1: #5B3FE0;
-  --viz-grid: rgba(18, 20, 58, 0.10); --viz-axis: rgba(18, 20, 58, 0.30); --viz-muted: #5F6496;
-  --hm-0: #E3E5F4; --hm-1: #C9C0FA; --hm-2: #9C88F5; --hm-3: #6F4DFF; --hm-4: #3A22B0;
-}
+/* ---------- Text size (Profile > Appearance). Everything is rem-based, so this scales the whole app. ---------- */
+:root[data-size="large"] { font-size: 112.5%; }
+:root[data-size="xl"] { font-size: 125%; }

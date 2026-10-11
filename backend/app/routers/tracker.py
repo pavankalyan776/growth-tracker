@@ -73,6 +73,34 @@ def toggle_completion(payload: schemas.CompletionToggle, today: date = Depends(r
     }
 
 
+@router.post("/dares/toggle")
+def toggle_dare(payload: schemas.DareToggle, today: date = Depends(resolve_today),
+                user: models.User = Depends(require_onboarded), db: Session = Depends(get_db)):
+    snap = _snap(db, user)
+    if not snap.in_plan(payload.date):
+        raise HTTPException(status_code=400, detail="That date is outside your plan.")
+    if payload.date > today:
+        raise HTTPException(status_code=400, detail="You can't finish a dare for a future day.")
+    before = game_logic.compute_progress(snap, today)
+    crud.set_dare(db, user.id, payload.date, payload.completed)
+    snap_after = _snap(db, user)
+    after = game_logic.compute_progress(snap_after, today)
+    events = game_logic.reconcile(db, snap_after, user, today)
+    return {
+        "ok": True, "events": events,
+        "xp_delta": after["total_xp"] - before["total_xp"],
+        "level_up": after["level"] > before["level"],
+        "rank_up": after["rank"] != before["rank"] and after["level"] > before["level"],
+        "rank": after["rank"], "level": after["level"],
+    }
+
+
+@router.get("/board")
+def get_board(today: date = Depends(resolve_today), user: models.User = Depends(require_onboarded),
+              db: Session = Depends(get_db)):
+    return game_logic.build_board(db, user, today)
+
+
 # ---------------------------------------------------------------------------
 # Quests: full CRUD
 # ---------------------------------------------------------------------------
@@ -144,7 +172,7 @@ def get_milestones(user: models.User = Depends(require_onboarded), db: Session =
                 db.query(models.MilestoneAchieved).filter(models.MilestoneAchieved.user_id == user.id).all()}
     return [
         schemas.MilestoneOut(id=m["id"], title=m["title"], desc=m["desc"], reward=m["reward"],
-                             achieved=m["id"] in achieved, achieved_at=achieved.get(m["id"]))
+                             achieved=m["id"] in achieved, achieved_at=achieved.get(m["id"]), calm=m.get("calm"))
         for m in game_logic.MILESTONE_DEFS
     ]
 
@@ -276,7 +304,7 @@ def equip_item(payload: schemas.ShopAction, user: models.User = Depends(require_
 def export_everything(user: models.User = Depends(require_onboarded), db: Session = Depends(get_db)):
     uid = user.id
     return {
-        "exported_for": "growth-tracker v3",
+        "exported_for": "growth-tracker v4",
         "hunter": {"name": user.name, "email": user.email,
                    "plan_start": user.plan_start.isoformat(), "plan_end": user.plan_end.isoformat()},
         "quests": [schemas.QuestOut.model_validate(q).model_dump() for q in crud.get_quests(db, uid)],
@@ -285,6 +313,8 @@ def export_everything(user: models.User = Depends(require_onboarded), db: Sessio
                         .order_by(models.Completion.date).all()],
         "shields": sorted(s.date.isoformat() for s in
                           db.query(models.Shield).filter(models.Shield.user_id == uid).all()),
+        "dares_done": sorted(r.date.isoformat() for r in
+                             db.query(models.DareDone).filter(models.DareDone.user_id == uid).all()),
         "journal": [_j(j) for j in db.query(models.Journal).filter(models.Journal.user_id == uid)
                     .order_by(models.Journal.date).all()],
         "coin_transactions": [{"date": t.date.isoformat(), "amount": t.amount, "reason": t.reason} for t in

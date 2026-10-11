@@ -8,7 +8,8 @@ from .database import Base
 
 # ---------------------------------------------------------------------------
 # Star schema (every row below belongs to exactly one user)
-#   Fact table       : completions   (one row per quest cleared on a date, keyed by user+quest+date)
+#   Fact tables      : completions   (one row per quest cleared on a date, keyed by user+quest+date)
+#                      dares_done    (one row per Daily Dare finished)
 #   Dimension tables : users (who), quests (what), journal (how it felt); the date is implicit
 #   Ledgers          : coin_transactions, purchases, shields, milestones_achieved
 #   Platform tables  : audit_logs (who did what), app_secrets (server signing key)
@@ -34,7 +35,9 @@ class User(Base):
     plan_start = Column(Date, nullable=True)
     plan_end = Column(Date, nullable=True)
     title_key = Column(String(50), nullable=False, default="title_rookie")
-    theme_key = Column(String(50), nullable=False, default="theme_arise")
+    theme_key = Column(String(50), nullable=False, default="theme_sprout")
+    avatar = Column(String(20), nullable=False, default="spark")            # one of avatars.AVATARS
+    public_board = Column(Boolean, nullable=False, default=False)           # opt in to the Hall leaderboard
     created_at = Column(DateTime, nullable=False, default=utcnow)
     last_login_at = Column(DateTime, nullable=True)
     last_active_at = Column(DateTime, nullable=True)
@@ -67,6 +70,17 @@ class Completion(Base):
         UniqueConstraint("quest_id", "date", name="uq_quest_date"),
         Index("ix_completions_user_date", "user_id", "date"),
     )
+
+
+class DareDone(Base):
+    """Fact: this user finished the Daily Dare of this date. (Which dare it was is derived, see dares.py.)"""
+    __tablename__ = "dares_done"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    date = Column(Date, nullable=False)
+
+    __table_args__ = (UniqueConstraint("user_id", "date", name="uq_dare_user_date"),)
 
 
 class Journal(Base):

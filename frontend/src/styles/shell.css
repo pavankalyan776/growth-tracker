@@ -9,18 +9,16 @@
 }
 .rail-logo { width: 48px; height: 48px; display: grid; place-items: center; color: var(--accent-text); border: 1px solid var(--line-strong); border-radius: 14px; background: var(--obsidian); }
 .rail-logo svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-:root[data-mode="light"] .rail-logo { color: var(--accent); }
 .rail-nav { flex: 1; display: flex; flex-direction: column; gap: 2px; width: 100%; padding: 0 8px; overflow-y: auto; scrollbar-width: none; }
 .rail-sep { width: 36px; border: 0; border-top: 1px solid var(--line); margin: 8px auto; }
 .rail-link {
   position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 2px 9px;
-  color: var(--text-2); text-decoration: none; font-size: 12px; font-weight: 600; border-radius: 12px; transition: color .15s, background .15s;
+  color: var(--text-2); text-decoration: none; font-size: 0.8125rem; font-weight: 600; border-radius: 12px; transition: color .15s, background .15s;
 }
 .rail-link:hover { color: var(--text); background: var(--obsidian); }
 .rail-link.is-active { color: var(--text); background: var(--basalt); }
 .rail-link.is-active::before { content: ""; position: absolute; left: -8px; top: 12px; bottom: 12px; width: 3px; border-radius: 0 3px 3px 0; background: var(--accent); }
 .rail-link.is-active .icon { color: var(--accent-text); }
-:root[data-mode="light"] .rail-link.is-active .icon { color: var(--accent); }
 .rail-link.admin .icon { color: var(--cyan); }
 .rail-me { width: 68px; padding-bottom: 8px; }
 .avatar { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--on-accent); font-family: var(--font-display); font-weight: 800; font-size: 18px; }
@@ -38,7 +36,6 @@
 .cmd-trigger:hover { color: var(--text); border-color: var(--text-3); }
 kbd { font: 600 11px var(--font-body); padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line-strong); color: var(--text-3); }
 .chip.streak .icon { color: var(--red-text); }
-:root[data-mode="light"] .chip.streak .icon { color: #C2410C; }
 .chip.streak.risk { border-color: var(--red); color: var(--red-text); animation: risk 2.4s ease-in-out infinite; }
 @keyframes risk { 50% { box-shadow: 0 0 0 4px var(--red-tint); } }
 a.chip { text-decoration: none; }
@@ -65,7 +62,7 @@ a.chip { text-decoration: none; }
 }
 
 /* ---------- Overlays ---------- */
-.scrim { position: fixed; inset: 0; z-index: 70; background: rgba(5, 6, 22, 0.66); backdrop-filter: blur(3px); display: flex; align-items: flex-end; justify-content: center; animation: fade .18s ease-out; }
+.scrim { position: fixed; inset: 0; z-index: 70; background: var(--scrim); backdrop-filter: blur(3px); display: flex; align-items: flex-end; justify-content: center; animation: fade .18s ease-out; }
 .scrim.center { align-items: flex-start; padding-top: 14vh; }
 .scrim.side { align-items: stretch; justify-content: flex-end; }
 @keyframes fade { from { opacity: 0; } }
@@ -136,7 +133,6 @@ a.chip { text-decoration: none; }
 .gate-big small { font-size: .36em; color: var(--text-3); margin-left: 2px; }
 .gate-caption { color: var(--text-2); font-size: var(--step--1); font-weight: 600; margin-top: 2px; }
 .gate.is-cleared .gate-big { color: var(--accent-text); text-shadow: 0 0 30px var(--accent-glow); }
-:root[data-mode="light"] .gate.is-cleared .gate-big { color: var(--accent); }
 .gate-closed { color: var(--text); font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; letter-spacing: .02em; }
 .gate.is-cleared .gate-seg.on { animation: shut 1s var(--ease-out); }
 @keyframes shut { 35% { filter: brightness(2) drop-shadow(0 0 20px var(--accent)); stroke-width: 24; } }
@@ -149,6 +145,5 @@ a.chip { text-decoration: none; }
 .emblem-letter { position: relative; color: var(--text); line-height: 1; padding-top: 2px; }
 .emblem.tier-hi .emblem-outer { stroke: var(--accent); fill: color-mix(in srgb, var(--accent) 16%, var(--obsidian)); }
 .emblem.tier-hi .emblem-letter { color: var(--accent-text); }
-:root[data-mode="light"] .emblem.tier-hi .emblem-letter { color: var(--accent); }
 .emblem.tier-s .emblem-outer { stroke: var(--gold); fill: var(--gold-tint); filter: drop-shadow(0 0 10px var(--gold-tint)); }
 .emblem.tier-s .emblem-letter { color: var(--gold); }

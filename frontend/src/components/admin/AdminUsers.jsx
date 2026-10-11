@@ -7,7 +7,7 @@ import { useAuth } from "../../auth";
 import { timeAgo } from "../../dateUtils";
 
 const COLUMNS = [
-  { key: "name", label: "Hunter", sort: "name" },
+  { key: "name", label: "Member", sort: "name" },
   { key: "role", label: "Role" },
   { key: "rank", label: "Rank", sort: "level" },
   { key: "streak", label: "Streak", sort: "streak" },
@@ -54,14 +54,14 @@ export default function AdminUsers() {
         <div className="field grow"><label htmlFor="uq">Search</label>
           <div className="input-wrap"><input id="uq" className="input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name or email" /></div></div>
         <div className="field"><label htmlFor="ur">Role</label>
-          <select id="ur" className="select" value={role} onChange={(e) => setRole(e.target.value)}><option value="">All roles</option><option value="user">Hunters</option><option value="admin">Admins</option></select></div>
+          <select id="ur" className="select" value={role} onChange={(e) => setRole(e.target.value)}><option value="">All roles</option><option value="user">Members</option><option value="admin">Admins</option></select></div>
         <div className="field"><label htmlFor="us">Status</label>
           <select id="us" className="select" value={status} onChange={(e) => setStatus(e.target.value)}><option value="">Any status</option><option value="active">Active</option><option value="disabled">Disabled</option></select></div>
       </section>
 
       {error && <div className="alert error" role="alert"><Icon name="alert" />{error}</div>}
 
-      <section className="panel table-panel" aria-label="Hunters">
+      <section className="panel table-panel" aria-label="Members">
         <div className="table-scroll">
           <table className="data-table">
             <thead>
@@ -79,7 +79,7 @@ export default function AdminUsers() {
             </thead>
             <tbody>
               {!data && Array.from({ length: 6 }, (_, i) => <tr key={i}><td colSpan={COLUMNS.length}><div className="skel" style={{ height: 40 }} /></td></tr>)}
-              {data && data.items.length === 0 && <tr><td colSpan={COLUMNS.length}><div className="empty"><div className="display">No hunters match</div>Try a different search or clear the filters.</div></td></tr>}
+              {data && data.items.length === 0 && <tr><td colSpan={COLUMNS.length}><div className="empty"><div className="display">No members match</div>Try a different search or clear the filters.</div></td></tr>}
               {data && data.items.map((u) => (
                 <tr key={u.id} className={u.is_active ? "" : "is-disabled"} onClick={() => setOpenId(u.id)}>
                   <td>
@@ -89,7 +89,7 @@ export default function AdminUsers() {
                     </button>
                   </td>
                   <td>
-                    <span className={`chip ${u.role === "admin" ? "cyan" : ""}`}>{u.role === "admin" ? "Admin" : "Hunter"}</span>
+                    <span className={`chip ${u.role === "admin" ? "cyan" : ""}`}>{u.role === "admin" ? "Admin" : "Member"}</span>
                     {!u.is_active && <span className="chip red">Disabled</span>}
                   </td>
                   <td>{u.stats ? <span className="rankcell"><b className="display">{u.stats.rank}</b> Lv {u.stats.level}</span> : <span className="faint">No plan yet</span>}</td>
@@ -104,7 +104,7 @@ export default function AdminUsers() {
         </div>
         {data && (
           <div className="pager">
-            <span className="small muted">{data.total === 0 ? "0 hunters" : `${(data.page - 1) * data.page_size + 1} to ${Math.min(data.page * data.page_size, data.total)} of ${data.total}`}</span>
+            <span className="small muted">{data.total === 0 ? "0 members" : `${(data.page - 1) * data.page_size + 1} to ${Math.min(data.page * data.page_size, data.total)} of ${data.total}`}</span>
             <span className="row">
               <button type="button" className="icon-btn" disabled={page <= 1} onClick={() => setPage(page - 1)} aria-label="Previous page"><Icon name="chevronLeft" /></button>
               <span className="small">Page {page} of {pages}</span>
@@ -151,7 +151,7 @@ function UserDrawer({ id, onClose, onChanged }) {
 
   return (
     <div className="scrim side" onClick={onClose}>
-      <aside className="drawer" role="dialog" aria-modal="true" aria-label={u ? `${u.name}, hunter details` : "Hunter details"} onClick={(e) => e.stopPropagation()}>
+      <aside className="drawer" role="dialog" aria-modal="true" aria-label={u ? `${u.name}, member details` : "Member details"} onClick={(e) => e.stopPropagation()}>
         <header className="drawer-head">
           <div className="grow">
             {u ? (<><h2 className="display">{u.name}</h2><p className="muted small">{u.email}</p></>) : <div className="skel" style={{ height: 48, width: 220 }} />}
@@ -165,7 +165,7 @@ function UserDrawer({ id, onClose, onChanged }) {
           {u && (
             <>
               <div className="row wrap">
-                <span className={`chip ${u.role === "admin" ? "cyan" : ""}`}><Icon name={u.role === "admin" ? "shield" : "user"} />{u.role === "admin" ? "Admin" : "Hunter"}</span>
+                <span className={`chip ${u.role === "admin" ? "cyan" : ""}`}><Icon name={u.role === "admin" ? "shield" : "user"} />{u.role === "admin" ? "Admin" : "Member"}</span>
                 <span className={`chip ${u.is_active ? "" : "red"}`}>{u.is_active ? "Active account" : "Disabled"}</span>
                 {isMe && <span className="chip accent">This is you</span>}
               </div>
@@ -181,7 +181,7 @@ function UserDrawer({ id, onClose, onChanged }) {
                     <Fact label="Best streak" value={s.longest_streak} />
                     <Fact label="Average completion" value={`${s.avg_completion}%`} />
                     <Fact label="Last 7 days" value={`${s.last7_completion}%`} />
-                    <Fact label="Quests cleared" value={s.total_completed} />
+                    <Fact label="Tasks completed" value={s.total_completed} />
                     <Fact label="Coins" value={u.coins} />
                   </dl>
                   <h3 className="subhead">Last 28 days</h3>
@@ -191,7 +191,7 @@ function UserDrawer({ id, onClose, onChanged }) {
                   </div>
                   <p className="small faint">Plan: {u.plan_start} to {u.plan_end}. {s.quest_count} quests, {s.journal_entries} journal entries (private).</p>
                 </section>
-              ) : <p className="muted">This hunter hasn't set up a plan yet, so there's no progress to show.</p>}
+              ) : <p className="muted">This member hasn't set up a plan yet, so there's no progress to show.</p>}
 
               <section className="drawer-sec">
                 <h3 className="subhead">Account</h3>

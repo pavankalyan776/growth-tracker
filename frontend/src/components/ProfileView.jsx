@@ -1,9 +1,11 @@
 import { useState } from "react";
+import Appearance from "./Appearance";
+import Avatar, { AVATARS } from "./Avatar";
 import Icon from "./icons";
 import { api } from "../api";
 import { useAuth } from "../auth";
 import { useGame } from "../game";
-import { applyMode, getModePref } from "../theme";
+import { useLook } from "../look";
 
 function Section({ title, sub, children, tone }) {
   return (
@@ -17,7 +19,7 @@ function Section({ title, sub, children, tone }) {
 export default function ProfileView({ trackerReady }) {
   const { user, setUser, adopt, signOut } = useAuth();
   const game = useGame();
-  const [mode, setMode] = useState(getModePref);
+  const { w } = useLook();
   const [name, setName] = useState(user.name);
   const [plan, setPlan] = useState({ start: user.plan_start || "", end: user.plan_end || "" });
   const [pw, setPw] = useState({ current: "", next: "" });
@@ -35,26 +37,49 @@ export default function ProfileView({ trackerReady }) {
   return (
     <div className="profile-grid">
       <Section title="Account" sub={user.email}>
-        <form onSubmit={run("name", async () => { setUser(await api.updateProfile(name.trim())); if (game) game.refresh(); }, "Name updated.")}>
-          <div className="field"><label htmlFor="pname">Hunter name</label>
+        <form onSubmit={run("name", async () => { setUser(await api.updateProfile({ name: name.trim() })); if (game) game.refresh(); }, "Name updated.")}>
+          <div className="field"><label htmlFor="pname">{w.yourName}</label>
             <input id="pname" className="input" value={name} maxLength={20} onChange={(e) => setName(e.target.value)} /></div>
           <div className="row wrap">
             <button type="submit" className="btn" disabled={name.trim().length < 2 || name.trim() === user.name}>Save name</button>
-            <span className={`chip ${user.role === "admin" ? "cyan" : ""}`}><Icon name={user.role === "admin" ? "shield" : "user"} />{user.role === "admin" ? "Admin" : "Hunter"}</span>
+            <span className={`chip ${user.role === "admin" ? "cyan" : ""}`}><Icon name={user.role === "admin" ? "shield" : "user"} />{user.role === "admin" ? "Admin" : w.style === "calm" ? "Member" : "Hunter"}</span>
           </div>
           {msgBox("name")}
         </form>
       </Section>
 
-      <Section title="Appearance">
-        <div className="seg" role="radiogroup" aria-label="Colour mode">
-          {[["dark", "Void"], ["light", "Daylight"], ["system", "Match device"]].map(([v, label]) => (
-            <button key={v} type="button" role="radio" aria-checked={mode === v} aria-pressed={mode === v}
-              onClick={() => { applyMode(v); setMode(v); }}>{label}</button>
+      <Section title="Appearance" sub="Saved on this device">
+        <Appearance />
+        <p className="help" style={{ marginTop: 4 }}>{`Colours and titles are unlocked in ${w.rewards}.`}</p>
+      </Section>
+
+      <Section title="Avatar" sub="Shown next to your name">
+        <div className="avatar-grid" role="radiogroup" aria-label="Choose an avatar">
+          {AVATARS.map((a) => (
+            <button key={a} type="button" role="radio" aria-checked={user.avatar === a} aria-label={a}
+              className={`avatar-pick${user.avatar === a ? " is-on" : ""}`}
+              onClick={run("avatar", async () => { setUser(await api.updateProfile({ avatar: a })); if (game) game.refresh(); }, "Avatar updated.")}>
+              <Avatar name={user.name} avatar={a} size={44} />
+            </button>
           ))}
         </div>
-        <p className="help" style={{ marginTop: 12 }}>Accent colours and titles are unlocked in the Shop.</p>
+        {msgBox("avatar")}
       </Section>
+
+      {trackerReady && (
+        <Section title={w.hall} sub="Optional, off by default">
+          <p className="muted" style={{ marginBottom: 12 }}>
+            {user.public_board
+              ? `You are on the ${w.hall.replace("The ", "").toLowerCase()}. Other members can see your name, avatar, level, streak and this week's points.`
+              : `Join to compete with other members. Only your name, avatar, level, streak and weekly points would be visible. Your ${w.habitsLower}, journal and coins stay private.`}
+          </p>
+          <button type="button" className={`btn${user.public_board ? " ghost" : ""}`}
+            onClick={run("board", async () => { setUser(await api.updateProfile({ public_board: !user.public_board })); }, user.public_board ? "You left." : "You joined.")}>
+            <Icon name="podium" className="sm" />{user.public_board ? w.leaveBoard : w.joinBoard}
+          </button>
+          {msgBox("board")}
+        </Section>
+      )}
 
       {trackerReady && (
         <Section title="Plan window" sub="Streaks, XP and coins count inside it">
@@ -86,12 +111,12 @@ export default function ProfileView({ trackerReady }) {
       <Section title="Privacy" sub="What admins can and can't see">
         <ul className="privacy-list">
           <li><Icon name="eye" className="sm" /><span><b>Admins can see:</b> your email, name, sign-up and last-active time, level, rank, streak and completion percentages.</span></li>
-          <li><Icon name="lock" className="sm" /><span><b>Admins can't see:</b> your journal entries, your quest names, or your password. There is no screen or endpoint that shows them.</span></li>
+          <li><Icon name="lock" className="sm" /><span><b>Admins can't see:</b> your journal entries, your {w.habit} names, which dares you did, or your password. There is no screen or endpoint that shows them.</span></li>
         </ul>
       </Section>
 
       <Section title="Delete account" sub="Permanent" tone="danger">
-        <p className="muted" style={{ marginBottom: 12 }}>This removes your account, quests, history, journal and coins. It can't be undone.</p>
+        <p className="muted" style={{ marginBottom: 12 }}>{`This removes your account, ${w.habitsLower}, history, journal and coins. It can't be undone.`}</p>
         {!confirmDelete ? (
           <button type="button" className="btn danger" onClick={() => setConfirmDelete(true)}><Icon name="trash" className="sm" />Delete my account</button>
         ) : (

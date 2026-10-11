@@ -5,6 +5,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
+from .avatars import AVATARS
+
 DAY_TYPE_PATTERN = r"^(weekday|saturday|sunday)$"
 STAT_PATTERN = r"^(STR|INT|PER|VIT|AGI)$"
 
@@ -64,12 +66,27 @@ class ChangePasswordIn(BaseModel):
 
 
 class ProfileUpdate(BaseModel):
-    name: str
+    """Every field is optional so the profile page can save one thing at a time."""
+    name: Optional[str] = None
+    avatar: Optional[str] = None
+    public_board: Optional[bool] = None
 
     @field_validator("name")
     @classmethod
-    def _name(cls, v: str) -> str:
-        return _clean_name(v)
+    def _name(cls, v: Optional[str]) -> Optional[str]:
+        return _clean_name(v) if v is not None else v
+
+    @field_validator("avatar")
+    @classmethod
+    def _avatar(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in AVATARS:
+            raise ValueError("Pick one of the avatars offered.")
+        return v
+
+
+class DareToggle(BaseModel):
+    date: date_type
+    completed: bool
 
 
 class DeleteAccountIn(BaseModel):
@@ -77,7 +94,7 @@ class DeleteAccountIn(BaseModel):
 
 
 class OnboardingIn(BaseModel):
-    template: str = Field(pattern=r"^(exam_ai|focus|blank)$")
+    template: str = Field(pattern=r"^(wellbeing|student|exam_ai|focus|blank)$")
     plan_start: date_type
     plan_end: date_type
 
@@ -92,6 +109,8 @@ class UserOut(BaseModel):
     onboarded: bool
     plan_start: Optional[date_type] = None
     plan_end: Optional[date_type] = None
+    avatar: str = "spark"
+    public_board: bool = False
 
 
 class AuthOut(BaseModel):
@@ -154,6 +173,7 @@ class MilestoneOut(BaseModel):
     reward: int
     achieved: bool
     achieved_at: Optional[datetime] = None
+    calm: Optional[dict] = None          # the same milestone in plain words
 
 
 # ---------------------------------------------------------------------------

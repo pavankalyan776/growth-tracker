@@ -30,7 +30,6 @@
 .auth-hero > * { position: relative; z-index: 1; }
 .auth-brand { display: flex; align-items: center; gap: var(--s3); font-size: 1.5rem; }
 .auth-brand svg { width: 34px; height: 34px; fill: none; stroke: var(--accent-text); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-:root[data-mode="light"] .auth-brand svg { stroke: var(--accent); }
 .auth-brand .display { font-weight: 800; letter-spacing: .02em; }
 .auth-hero-main { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--s6); }
 .auth-headline { font-size: clamp(6.5rem, 17vw, 14rem); line-height: .78; letter-spacing: -0.015em; margin-left: -0.04em; }
@@ -38,7 +37,6 @@
 .auth-facts { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s5); }
 .auth-facts li { display: flex; gap: var(--s3); align-items: flex-start; }
 .auth-facts .icon { color: var(--accent-text); margin-top: 2px; }
-:root[data-mode="light"] .auth-facts .icon { color: var(--accent); }
 .auth-facts b { display: block; margin-bottom: 2px; }
 .auth-facts span { color: var(--text-2); font-size: var(--step--1); line-height: 1.45; display: block; }
 .auth-form-wrap { display: grid; place-items: center; padding: var(--s6) var(--s5); background: var(--obsidian); border-left: 1px solid var(--line); }
@@ -131,7 +129,6 @@
 .q-meta { display: flex; gap: var(--s3); align-items: center; }
 .q-xp { font-size: 1.2rem; color: var(--text-3); }
 .q.done .q-xp { color: var(--accent-text); }
-:root[data-mode="light"] .q.done .q-xp { color: var(--accent); }
 
 .hunter-head { display: flex; align-items: center; gap: var(--s4); margin-bottom: var(--s5); }
 .hunter-name { font-size: 2.5rem; margin-bottom: 6px; overflow-wrap: anywhere; }
@@ -196,7 +193,7 @@
 .tile::before { content: ""; position: absolute; inset: 1px; z-index: -1; background: var(--obsidian);
   clip-path: polygon(0 0, calc(100% - var(--c) + 1px) 0, 100% calc(var(--c) - 1px), 100% 100%, calc(var(--c) - 1px) 100%, 0 calc(100% - var(--c) + 1px)); }
 .tile.warn { background: var(--red); }
-.progress-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s5); align-items: start; }
+.progress-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s5); align-items: stretch; }
 .panel.wide { grid-column: 1 / -1; }
 
 /* ---------- Shop / trophies ---------- */
