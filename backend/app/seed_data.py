@@ -91,26 +91,31 @@ _WEEKEND_STUDENT = [
 
 TEMPLATES = {
     "wellbeing": {
+        "emoji": "🌿",
         "label": "Everyday wellbeing",
         "desc": "For anyone: movement, water, a proper lunch, a little learning, tidying and good sleep. 7 tasks a day.",
         "quests": _q("weekday", _WEEKDAY_WELL) + _q("saturday", _WEEKEND_WELL) + _q("sunday", _WEEKEND_WELL),
     },
     "student": {
+        "emoji": "🎒",
         "label": "Student life",
         "desc": "Revision, classes, homework, sport, practice problems and rest. 7 tasks a day.",
         "quests": _q("weekday", _WEEKDAY_STUDENT) + _q("saturday", _WEEKEND_STUDENT) + _q("sunday", _WEEKEND_STUDENT),
     },
     "exam_ai": {
+        "emoji": "🧠",
         "label": "Exam + AI Engineer",
         "desc": "Office hours, govt exam prep, an AI course, NeetCode, exercise, water and sleep. 7 tasks a day.",
         "quests": _q("weekday", _WEEKDAY_EXAM) + _q("saturday", _SAT_EXAM) + _q("sunday", _SUN_EXAM),
     },
     "focus": {
+        "emoji": "🎯",
         "label": "Deep focus",
         "desc": "A lighter plan: movement, deep work, learning, reading, water and sleep. 6 tasks a day.",
         "quests": _q("weekday", _WEEKDAY_FOCUS) + _q("saturday", _WEEKEND_FOCUS) + _q("sunday", _WEEKEND_FOCUS),
     },
     "blank": {
+        "emoji": "✨",
         "label": "Blank slate",
         "desc": "Start empty and build your own list.",
         "quests": [],

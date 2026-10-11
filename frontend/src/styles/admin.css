@@ -1,0 +1,90 @@
+/* The admin console is its own app. It looks different on purpose, so nobody mistakes it for the member view:
+   indigo, a dark sidebar, denser tables, and an accent that ignores shop colours. */
+.admin-app {
+  --accent: #4F46E5;
+  --accent-2: #7C3AED;
+  --accent-text: #4338CA;
+  --on-accent: #FFFFFF;
+  --accent-glow: rgba(79, 70, 229, 0.28);
+  --side-w: 244px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+  display: grid; grid-template-columns: var(--side-w) minmax(0, 1fr); min-height: 100vh;
+  background: var(--page); color: var(--text);
+}
+.admin-app { --grad: linear-gradient(135deg, var(--accent), var(--accent-2));
+  --heat-0: color-mix(in srgb, var(--danger) 20%, var(--card)); --heat-1: color-mix(in srgb, var(--accent) 42%, var(--card));
+  --heat-2: color-mix(in srgb, var(--accent) 68%, var(--card)); --heat-3: var(--accent); --heat-4: var(--accent-2);
+  --page: #F3F4FA; --card: #FFFFFF; --sunken: #ECEEF8; --line: rgba(30, 32, 80, .12); --line-strong: rgba(30, 32, 80, .3); --text: #1A1B33; --text-2: #4A4C6E; --text-3: #61648A; }
+:root[data-mode="dark"] .admin-app { --page: #0E1020; --card: #171A30; --sunken: #20243F; --line: rgba(200, 205, 255, .12); --line-strong: rgba(200, 205, 255, .32); --text: #EEF0FF; --text-2: #C4C8EA; --text-3: #A3A8D2; --accent: #8B93FF; --accent-2: #B28CFF; --accent-text: #A9AFFF; --on-accent: #12143A; --accent-glow: rgba(139, 147, 255, .28); }
+.admin-app .side { background: #14163A; border-right: 0; color: #DDE0FF; }
+.admin-app .brand { color: #fff; }
+.admin-app .brand-mark { background: linear-gradient(135deg, #6366F1, #A855F7); box-shadow: none; }
+.admin-app .nav-item { color: #BFC4F5; }
+.admin-app .nav-item:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+.admin-app .nav-item[aria-current="page"] { background: #fff; color: #1A1B4B; box-shadow: none; }
+.admin-app .nav-emoji { background: rgba(255, 255, 255, .1); }
+.admin-app .nav-item[aria-current="page"] .nav-emoji { background: #E8E9FF; }
+.admin-app .side .btn.ghost { color: #E6E8FF; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .25); }
+.admin-app .side .btn.ghost:hover:not(:disabled) { background: rgba(255, 255, 255, .1); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .4); }
+.admin-app .me-card { background: rgba(255, 255, 255, .08); color: #fff; }
+.admin-app .me-card span { color: #BFC4F5; }
+.admin-app .role-tag { font-size: .75rem; font-weight: 800; letter-spacing: .02em; padding: 2px 8px; border-radius: 99px; background: rgba(255, 255, 255, .16); color: #fff; }
+.admin-app .btn { border-radius: 12px; }
+.admin-app .chip { border-radius: 8px; }
+.admin-app .seg, .admin-app .seg button { border-radius: 12px; }
+.admin-app .subtabs a { border-radius: 12px; }
+
+.admin-top { display: flex; align-items: center; gap: 16px; padding: 22px 32px 6px; max-width: 1280px; width: 100%; margin: 0 auto; }
+.admin-main { min-width: 0; display: flex; flex-direction: column; }
+
+.who { display: flex; align-items: center; gap: 10px; background: none; border: 0; padding: 0; text-align: left; color: inherit; }
+.who b { display: block; line-height: 1.2; }
+.who small { color: var(--text-3); }
+.rankcell { display: inline-flex; align-items: baseline; gap: 6px; }
+.pctcell { display: inline-flex; align-items: center; gap: 8px; }
+.meter { width: 64px; height: 8px; border-radius: 99px; background: var(--sunken); overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--grad); }
+.num-cell { white-space: nowrap; }
+.filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
+.filters .field { margin: 0; }
+.feed { display: flex; flex-direction: column; gap: 8px; }
+.feed li { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0; }
+.fact { background: var(--sunken); border-radius: 12px; padding: 10px; }
+.fact dt { font-size: .8rem; color: var(--text-3); font-weight: 800; }
+.fact dd { font-family: var(--font-display); font-size: var(--step-1); font-weight: 600; }
+.drawer-head { display: flex; align-items: flex-start; gap: 12px; padding: 20px 22px 12px; position: sticky; top: 0; background: var(--card); z-index: 1; }
+.drawer-body { padding: 0 22px 28px; display: flex; flex-direction: column; gap: 16px; }
+.drawer-sec { border-top: 1px solid var(--line); padding-top: 14px; }
+.spark { display: flex; align-items: flex-end; gap: 3px; height: 54px; }
+.spark i { flex: 1; border-radius: 3px 3px 0 0; background: var(--grad); min-height: 3px; }
+.danger-zone { margin-top: 14px; padding: 12px; border-radius: 12px; background: color-mix(in srgb, var(--danger) 10%, var(--card)); }
+.privacy-foot { display: flex; gap: 8px; align-items: flex-start; color: var(--text-3); font-size: var(--step--1); }
+
+/* content studio */
+.studio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--s3); }
+.studio-item { display: flex; gap: 12px; align-items: flex-start; padding: 14px; border-radius: 14px; background: var(--sunken); }
+.studio-item.is-off { opacity: .6; }
+.studio-item .big-emoji { font-size: 1.9rem; }
+.studio-item b { display: block; line-height: 1.25; }
+.studio-item .acts { display: flex; gap: 2px; margin-top: 6px; flex-wrap: wrap; }
+.preview-box { padding: 14px; border-radius: 14px; background: var(--sunken); margin-bottom: 14px; }
+.quest-edit { display: grid; grid-template-columns: 120px minmax(0, 1fr) 150px 90px 40px; gap: 8px; align-items: center; margin-bottom: 8px; }
+.quest-edit .input, .quest-edit .select { min-height: 40px; padding: 6px 10px; }
+
+@media (max-width: 860px) {
+  .admin-app { display: block; }
+  .admin-app .side { position: static; height: auto; flex-direction: row; align-items: center; padding: 10px 12px; overflow-x: auto; gap: 8px; }
+  .admin-app .side .brand-name, .admin-app .side-foot .me-card, .admin-app .nav-sub { display: none; }
+  .admin-app .side-nav { flex-direction: row; overflow: visible; }
+  .admin-app .nav-item { padding: 8px 10px; white-space: nowrap; }
+  .admin-app .side-foot { margin: 0 0 0 auto; flex-direction: row; }
+  .admin-top { padding: 14px 16px 4px; }
+  .admin-app .page { padding: 10px 16px 40px; }
+  .facts { grid-template-columns: repeat(2, 1fr); }
+  .quest-edit { grid-template-columns: 1fr 1fr; }
+  .quest-edit .qe-label { grid-column: 1 / -1; }
+}
+
+.studio-item .chip { background: var(--card); }

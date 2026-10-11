@@ -233,14 +233,14 @@ def test_v3_theme_keys_are_migrated(signup):
         user = db.query(models.User).filter(models.User.id == a.user["id"]).one()
         user.theme_key = "theme_glacier"
         db.add(models.Purchase(user_id=user.id, item_key="theme_glacier", cost=60))
-        db.add(models.Purchase(user_id=user.id, item_key="theme_jade", cost=60))     # collapses into free Sprout
+        db.add(models.Purchase(user_id=user.id, item_key="theme_jade", cost=60))     # jade became Forest in v5
         db.commit()
         bootstrap.migrate_theme_keys(db)
         bootstrap.migrate_theme_keys(db)                     # idempotent
         db.refresh(user)
         assert user.theme_key == "theme_ocean"
         owned = {p.item_key for p in db.query(models.Purchase).filter(models.Purchase.user_id == user.id)}
-        assert owned == {"theme_ocean"}
+        assert owned == {"theme_ocean", "theme_forest"}
     finally:
         db.close()
     shop = a.get("/api/shop").json()
@@ -253,7 +253,7 @@ def test_every_theme_has_light_and_dark_colours_and_titles_have_calm_names(clien
     for i in items:
         if i["kind"] == "theme":
             assert all(i[k].startswith(("#", "rgba")) for k in
-                       ("fill", "text", "on_fill", "light", "light_text", "on_light", "glow"))
+                       ("fill", "fill2", "text", "on_fill", "light", "light2", "light_text", "on_light"))
         else:
             assert i["calm"]
     assert client.get("/api/overview", params={"today": T}).json()["title_calm"] == "Beginner"

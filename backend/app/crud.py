@@ -3,15 +3,15 @@
 Every function that touches tracker data takes the user's id, and every query filters by it.
 That filter is what keeps one hunter's data invisible to another.
 """
+import json
 from datetime import date
-from typing import List, Optional, Set
+from typing import Dict, List, Optional, Set
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from . import models, schemas
 from .models import utcnow
-from .seed_data import TEMPLATES
 
 # ---------- Users ----------
 
@@ -43,7 +43,8 @@ def count_active_admins(db: Session) -> int:
 def delete_user_and_data(db: Session, user_id: int) -> None:
     """Remove a user and everything they own. Explicit so it behaves the same on SQLite and MySQL."""
     for model in (models.Completion, models.Journal, models.CoinTransaction, models.Shield,
-                  models.Purchase, models.MilestoneAchieved, models.DareDone, models.Quest):
+                  models.Purchase, models.MilestoneAchieved, models.DareDone, models.ChallengeCheckin,
+                  models.Challenge, models.Quest):
         db.query(model).filter(model.user_id == user_id).delete(synchronize_session=False)
     db.query(models.User).filter(models.User.id == user_id).delete(synchronize_session=False)
     db.commit()
@@ -65,9 +66,34 @@ def audit(db: Session, action: str, actor: Optional[models.User] = None,
 
 # ---------- Onboarding / seeding ----------
 
-def seed_quests(db: Session, user_id: int, template: str) -> None:
-    for q in TEMPLATES[template]["quests"]:
-        db.add(models.Quest(user_id=user_id, **q))
+def get_template(db: Session, key: str, only_active: bool = True) -> Optional[models.PlanTemplate]:
+    q = db.query(models.PlanTemplate).filter(models.PlanTemplate.key == key)
+    if only_active:
+        q = q.filter(models.PlanTemplate.active == True)  # noqa: E712
+    return q.first()
+
+
+def list_templates(db: Session, only_active: bool = True) -> List[models.PlanTemplate]:
+    q = db.query(models.PlanTemplate)
+    if only_active:
+        q = q.filter(models.PlanTemplate.active == True)  # noqa: E712
+    return q.order_by(models.PlanTemplate.sort_order, models.PlanTemplate.id).all()
+
+
+def template_quests(row: models.PlanTemplate) -> List[dict]:
+    try:
+        return json.loads(row.quests_json or "[]")
+    except ValueError:
+        return []
+
+
+def seed_quests(db: Session, user_id: int, template: models.PlanTemplate) -> None:
+    counters: Dict[str, int] = {}
+    for q in template_quests(template):
+        counters[q["day_type"]] = counters.get(q["day_type"], 0) + 1
+        db.add(models.Quest(user_id=user_id, day_type=q["day_type"], label=q["label"],
+                            time_label=q.get("time_label") or "All day", stat=q["stat"],
+                            sort_order=counters[q["day_type"]]))
     db.commit()
 
 
@@ -140,13 +166,52 @@ def set_completion(db: Session, user_id: int, quest_id: int, on: date, completed
 
 # ---------- Daily dares ----------
 
-def set_dare(db: Session, user_id: int, on: date, done: bool) -> None:
+def set_dare(db: Session, user_id: int, on: date, done: bool, dare_key: Optional[str] = None) -> None:
     row = db.query(models.DareDone).filter(models.DareDone.user_id == user_id, models.DareDone.date == on).first()
     if done and not row:
-        db.add(models.DareDone(user_id=user_id, date=on))
+        db.add(models.DareDone(user_id=user_id, date=on, dare_key=dare_key))
     elif not done and row:
         db.delete(row)
     db.commit()
+
+
+# ---------- Challenges the member builds ----------
+
+def get_challenge(db: Session, user_id: int, challenge_id: int) -> Optional[models.Challenge]:
+    return (db.query(models.Challenge)
+            .filter(models.Challenge.id == challenge_id, models.Challenge.user_id == user_id).first())
+
+
+def set_checkin(db: Session, user_id: int, challenge_id: int, on: date, done: bool) -> None:
+    row = (db.query(models.ChallengeCheckin)
+           .filter(models.ChallengeCheckin.challenge_id == challenge_id, models.ChallengeCheckin.date == on).first())
+    if done and not row:
+        db.add(models.ChallengeCheckin(challenge_id=challenge_id, user_id=user_id, date=on))
+    elif not done and row:
+        db.delete(row)
+    db.commit()
+
+
+def delete_challenge(db: Session, user_id: int, challenge_id: int) -> None:
+    db.query(models.ChallengeCheckin).filter(models.ChallengeCheckin.challenge_id == challenge_id,
+                                             models.ChallengeCheckin.user_id == user_id).delete(synchronize_session=False)
+    db.query(models.Challenge).filter(models.Challenge.id == challenge_id,
+                                      models.Challenge.user_id == user_id).delete(synchronize_session=False)
+    db.commit()
+
+
+# ---------- Announcements (written by the admin) ----------
+
+def active_announcements(db: Session, today: date) -> List[dict]:
+    rows = (db.query(models.Announcement).filter(models.Announcement.active == True)  # noqa: E712
+            .order_by(models.Announcement.id.desc()).limit(10).all())
+    return [announcement_out(a) for a in rows if a.expires_on is None or a.expires_on >= today][:3]
+
+
+def announcement_out(a: models.Announcement) -> dict:
+    return {"id": a.id, "title": a.title, "body": a.body, "emoji": a.emoji, "tone": a.tone, "active": a.active,
+            "expires_on": a.expires_on.isoformat() if a.expires_on else None,
+            "created_at": a.created_at.isoformat() + "Z" if a.created_at else None}
 
 
 # ---------- Shields ----------

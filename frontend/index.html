@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#F5F6F2" />
+    <meta name="theme-color" content="#FFF6F1" />
     <meta name="description" content="Growth Tracker: build daily habits, keep your streak, take on weekly bosses and dares, and level up." />
     <title>Growth Tracker</title>
     <script>
@@ -14,6 +14,7 @@
         var m = g("gt-mode") || "light";
         if (m === "system") m = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
         d.setAttribute("data-mode", m);
+        d.style.background = m === "dark" ? "#170F1E" : "#FFF6F1";
         d.setAttribute("data-style", g("gt-style") === "calm" ? "calm" : "adventure");
         var z = g("gt-size"); d.setAttribute("data-size", z === "large" || z === "xl" ? z : "standard");
       } catch (e) {}

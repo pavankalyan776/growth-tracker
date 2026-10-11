@@ -1,15 +1,12 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "@fontsource-variable/big-shoulders-display";
-import "@fontsource-variable/instrument-sans";
-import "@fontsource-variable/lexend";
+import "@fontsource-variable/fredoka";
+import "@fontsource-variable/nunito";
 import "./styles/tokens.css";
 import "./styles/base.css";
-import "./styles/shell.css";
-import "./styles/views.css";
+import "./styles/app.css";
 import "./styles/viz.css";
-import "./styles/features.css";
-import "./styles/calm.css";
+import "./styles/admin.css";
 import App from "./App.jsx";
 import { applyMode, applySize, applyStyle, getModePref, getSizePref, getStylePref } from "./theme";
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Icon from "../icons";
-import RankEmblem from "../RankEmblem";
+import Avatar from "../Avatar";
+import { RankBadge, Empty, ErrorNote, useDebounced } from "../ui";
 import { auditLabel, auditTone } from "./auditLabels";
 import { api } from "../../api";
 import { useAuth } from "../../auth";
@@ -9,20 +10,14 @@ import { timeAgo } from "../../dateUtils";
 const COLUMNS = [
   { key: "name", label: "Member", sort: "name" },
   { key: "role", label: "Role" },
-  { key: "rank", label: "Rank", sort: "level" },
+  { key: "rank", label: "Level", sort: "level" },
   { key: "streak", label: "Streak", sort: "streak" },
   { key: "completion", label: "Completion", sort: "completion" },
   { key: "active", label: "Last active", sort: "active" },
   { key: "joined", label: "Joined", sort: "joined" },
 ];
 
-function useDebounced(value, ms) {
-  const [v, setV] = useState(value);
-  useEffect(() => { const id = setTimeout(() => setV(value), ms); return () => clearTimeout(id); }, [value, ms]);
-  return v;
-}
-
-export default function AdminUsers() {
+export default function AdminMembers() {
   const [q, setQ] = useState("");
   const [role, setRole] = useState("");
   const [status, setStatus] = useState("");
@@ -50,7 +45,7 @@ export default function AdminUsers() {
 
   return (
     <div className="stack">
-      <section className="panel sm filters">
+      <section className="card sm filters">
         <div className="field grow"><label htmlFor="uq">Search</label>
           <div className="input-wrap"><input id="uq" className="input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name or email" /></div></div>
         <div className="field"><label htmlFor="ur">Role</label>
@@ -59,9 +54,9 @@ export default function AdminUsers() {
           <select id="us" className="select" value={status} onChange={(e) => setStatus(e.target.value)}><option value="">Any status</option><option value="active">Active</option><option value="disabled">Disabled</option></select></div>
       </section>
 
-      {error && <div className="alert error" role="alert"><Icon name="alert" />{error}</div>}
+      <ErrorNote error={error} />
 
-      <section className="panel table-panel" aria-label="Members">
+      <section className="card" style={{ padding: 0, overflow: "hidden" }} aria-label="Members">
         <div className="table-scroll">
           <table className="data-table">
             <thead>
@@ -79,21 +74,21 @@ export default function AdminUsers() {
             </thead>
             <tbody>
               {!data && Array.from({ length: 6 }, (_, i) => <tr key={i}><td colSpan={COLUMNS.length}><div className="skel" style={{ height: 40 }} /></td></tr>)}
-              {data && data.items.length === 0 && <tr><td colSpan={COLUMNS.length}><div className="empty"><div className="display">No members match</div>Try a different search or clear the filters.</div></td></tr>}
+              {data && data.items.length === 0 && <tr><td colSpan={COLUMNS.length}><Empty emoji="🔍" title="No members match">Try a different search or clear the filters.</Empty></td></tr>}
               {data && data.items.map((u) => (
                 <tr key={u.id} className={u.is_active ? "" : "is-disabled"} onClick={() => setOpenId(u.id)}>
                   <td>
                     <button type="button" className="who" onClick={(e) => { e.stopPropagation(); setOpenId(u.id); }}>
-                      <span className="avatar sm">{u.name.slice(0, 1).toUpperCase()}</span>
+                      <Avatar name={u.name} avatar={u.avatar} size={34} />
                       <span><b>{u.name}</b><small>{u.email}</small></span>
                     </button>
                   </td>
                   <td>
-                    <span className={`chip ${u.role === "admin" ? "cyan" : ""}`}>{u.role === "admin" ? "Admin" : "Member"}</span>
-                    {!u.is_active && <span className="chip red">Disabled</span>}
+                    <span className={`chip ${u.role === "admin" ? "info" : ""}`}>{u.role === "admin" ? "🛡️ Admin" : "Member"}</span>
+                    {!u.is_active && <span className="chip danger">Disabled</span>}
                   </td>
                   <td>{u.stats ? <span className="rankcell"><b className="display">{u.stats.rank}</b> Lv {u.stats.level}</span> : <span className="faint">No plan yet</span>}</td>
-                  <td className="num-cell">{u.stats ? <><Icon name="flame" className="sm" />{u.stats.current_streak}</> : "-"}</td>
+                  <td className="num-cell">{u.stats ? <>🔥 {u.stats.current_streak}</> : "-"}</td>
                   <td>{u.stats ? <span className="pctcell"><span className="meter"><i style={{ width: `${u.stats.last7_completion}%` }} /></span>{u.stats.last7_completion}%<small className="faint"> 7d</small></span> : "-"}</td>
                   <td className="faint">{timeAgo(u.last_active_at)}</td>
                   <td className="faint">{timeAgo(u.created_at)}</td>
@@ -165,16 +160,16 @@ function UserDrawer({ id, onClose, onChanged }) {
           {u && (
             <>
               <div className="row wrap">
-                <span className={`chip ${u.role === "admin" ? "cyan" : ""}`}><Icon name={u.role === "admin" ? "shield" : "user"} />{u.role === "admin" ? "Admin" : "Member"}</span>
-                <span className={`chip ${u.is_active ? "" : "red"}`}>{u.is_active ? "Active account" : "Disabled"}</span>
+                <span className={`chip ${u.role === "admin" ? "info" : ""}`}>{u.role === "admin" ? "🛡️ Admin" : "🙂 Member"}</span>
+                <span className={`chip ${u.is_active ? "ok" : "danger"}`}>{u.is_active ? "Active account" : "Disabled"}</span>
                 {isMe && <span className="chip accent">This is you</span>}
               </div>
 
               {s ? (
                 <section className="drawer-sec">
                   <div className="row" style={{ gap: 16 }}>
-                    <RankEmblem rank={s.rank} size={72} />
-                    <div><div className="display" style={{ fontSize: "1.75rem" }}>Level {s.level}</div><div className="small muted">{s.total_xp} XP, {s.perfect_days} perfect days</div></div>
+                    <RankBadge rank={s.rank} size={64} />
+                    <div><div className="display" style={{ fontSize: "1.75rem" }}>Level {s.level}</div><div className="small muted">{s.total_xp} XP · {s.perfect_days} perfect days · {s.dares_done || 0} dares · {s.challenges_done || 0} challenges</div></div>
                   </div>
                   <dl className="facts">
                     <Fact label="Current streak" value={s.current_streak} />
@@ -184,17 +179,17 @@ function UserDrawer({ id, onClose, onChanged }) {
                     <Fact label="Tasks completed" value={s.total_completed} />
                     <Fact label="Coins" value={u.coins} />
                   </dl>
-                  <h3 className="subhead">Last 28 days</h3>
+                  <h3 className="subhead">📈 Last 28 days</h3>
                   <div className="spark" role="img" aria-label="Daily completion for the last 28 days">
                     {u.recent_days.map((d) => <i key={d.date} title={`${d.date}: ${d.pct}%`} style={{ height: `${Math.max(6, d.pct)}%`, opacity: d.pct === 0 ? 0.25 : 1 }} />)}
                     {u.recent_days.length === 0 && <span className="faint small">No tracked days yet.</span>}
                   </div>
-                  <p className="small faint">Plan: {u.plan_start} to {u.plan_end}. {s.quest_count} quests, {s.journal_entries} journal entries (private).</p>
+                  <p className="small faint">Plan: {u.plan_start} to {u.plan_end}. {s.quest_count} tasks, {s.journal_entries} journal entries (private).</p>
                 </section>
               ) : <p className="muted">This member hasn't set up a plan yet, so there's no progress to show.</p>}
 
               <section className="drawer-sec">
-                <h3 className="subhead">Account</h3>
+                <h3 className="subhead">🧾 Account</h3>
                 <dl className="facts">
                   <Fact label="Joined" value={timeAgo(u.created_at)} />
                   <Fact label="Last sign-in" value={timeAgo(u.last_login_at)} />
@@ -210,23 +205,23 @@ function UserDrawer({ id, onClose, onChanged }) {
 
               {!isMe ? (
                 <section className="drawer-sec">
-                  <h3 className="subhead">Actions</h3>
+                  <h3 className="subhead">🛠️ Actions</h3>
                   <div className="row wrap">
                     <button type="button" className="btn ghost sm" disabled={busy}
                       onClick={() => act(() => api.adminPatchUser(u.id, { role: u.role === "admin" ? "user" : "admin" }))}>
-                      <Icon name="shield" className="sm" />{u.role === "admin" ? "Remove admin" : "Make admin"}
+                      🛡️ {u.role === "admin" ? "Remove admin" : "Make admin"}
                     </button>
                     <button type="button" className="btn ghost sm" disabled={busy}
                       onClick={() => act(() => api.adminPatchUser(u.id, { is_active: !u.is_active }))}>
-                      <Icon name="lock" className="sm" />{u.is_active ? "Disable account" : "Re-enable account"}
+                      🔒 {u.is_active ? "Disable account" : "Re-enable account"}
                     </button>
                     <button type="button" className="btn ghost sm" disabled={busy} onClick={() => act(() => api.adminForceLogout(u.id))}>
-                      <Icon name="logout" className="sm" />Sign out everywhere
+                      ↪️ Sign out everywhere
                     </button>
                   </div>
                   {u.role !== "admin" && (
                     !confirmDel ? (
-                      <button type="button" className="btn danger sm" style={{ marginTop: 16 }} onClick={() => setConfirmDel(true)}><Icon name="trash" className="sm" />Delete account and data</button>
+                      <button type="button" className="btn danger sm" style={{ marginTop: 16 }} onClick={() => setConfirmDel(true)}>🗑️ Delete account and data</button>
                     ) : (
                       <div className="danger-zone">
                         <p className="small">This permanently deletes the account and everything in it. Type <b>{u.email}</b> to confirm.</p>
@@ -243,7 +238,7 @@ function UserDrawer({ id, onClose, onChanged }) {
                 </section>
               ) : <p className="help">You can't change your own role or status here. Another admin can.</p>}
 
-              <p className="privacy-foot"><Icon name="lock" className="sm" />Journal entries and quest names are private and never shown here. Viewing this profile was recorded in the audit log.</p>
+              <p className="privacy-foot"><span className="emoji" aria-hidden="true">🔒</span>Journal entries and task names are private and never shown here. Viewing this profile was recorded in the audit log.</p>
             </>
           )}
         </div>

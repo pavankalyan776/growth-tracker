@@ -35,7 +35,7 @@ class User(Base):
     plan_start = Column(Date, nullable=True)
     plan_end = Column(Date, nullable=True)
     title_key = Column(String(50), nullable=False, default="title_rookie")
-    theme_key = Column(String(50), nullable=False, default="theme_sprout")
+    theme_key = Column(String(50), nullable=False, default="theme_sunset")
     avatar = Column(String(20), nullable=False, default="spark")            # one of avatars.AVATARS
     public_board = Column(Boolean, nullable=False, default=False)           # opt in to the Hall leaderboard
     created_at = Column(DateTime, nullable=False, default=utcnow)
@@ -79,6 +79,7 @@ class DareDone(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     date = Column(Date, nullable=False)
+    dare_key = Column(String(30), nullable=True)     # which dare it was, so history survives pool edits
 
     __table_args__ = (UniqueConstraint("user_id", "date", name="uq_dare_user_date"),)
 
@@ -141,6 +142,74 @@ class MilestoneAchieved(Base):
     achieved_at = Column(DateTime, default=utcnow)
 
     __table_args__ = (UniqueConstraint("user_id", "milestone_key", name="uq_milestone_user_key"),)
+
+
+class Challenge(Base):
+    """A challenge the member builds themselves: 'Meditate, 10 check-ins in the next 14 days'."""
+    __tablename__ = "challenges"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    title = Column(String(60), nullable=False)
+    emoji = Column(String(8), nullable=False, default="🎯")
+    target = Column(Integer, nullable=False)          # check-ins needed
+    start_date = Column(Date, nullable=False)
+    end_date = Column(Date, nullable=False)           # inclusive
+    archived = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime, nullable=False, default=utcnow)
+
+
+class ChallengeCheckin(Base):
+    __tablename__ = "challenge_checkins"
+
+    id = Column(Integer, primary_key=True, index=True)
+    challenge_id = Column(Integer, ForeignKey("challenges.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    date = Column(Date, nullable=False)
+
+    __table_args__ = (UniqueConstraint("challenge_id", "date", name="uq_checkin_challenge_date"),)
+
+
+class CustomDare(Base):
+    """Content the admin adds from the Content studio. Joins the built-in dares in dares.py."""
+    __tablename__ = "custom_dares"
+
+    id = Column(Integer, primary_key=True, index=True)
+    label = Column(String(120), nullable=False)
+    hint = Column(String(160), nullable=False, default="")
+    category = Column(String(10), nullable=False, default="mind")     # body | mind | kind | home
+    emoji = Column(String(8), nullable=False, default="✨")
+    active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime, nullable=False, default=utcnow)
+
+
+class Announcement(Base):
+    """A message from the admin that appears on every member's Today screen until it expires."""
+    __tablename__ = "announcements"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(80), nullable=False)
+    body = Column(String(300), nullable=False, default="")
+    emoji = Column(String(8), nullable=False, default="📣")
+    tone = Column(String(10), nullable=False, default="info")        # info | tip | party
+    active = Column(Boolean, nullable=False, default=True)
+    expires_on = Column(Date, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=utcnow)
+
+
+class PlanTemplate(Base):
+    """Starting plans offered during onboarding. Seeded from seed_data.py, then editable by the admin."""
+    __tablename__ = "plan_templates"
+
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String(30), unique=True, nullable=False)
+    label = Column(String(60), nullable=False)
+    desc = Column(String(200), nullable=False, default="")
+    emoji = Column(String(8), nullable=False, default="🌱")
+    active = Column(Boolean, nullable=False, default=True)
+    builtin = Column(Boolean, nullable=False, default=False)
+    sort_order = Column(Integer, nullable=False, default=0)
+    quests_json = Column(Text, nullable=False, default="[]")          # [{day_type,label,time_label,stat}]
 
 
 class AuditLog(Base):

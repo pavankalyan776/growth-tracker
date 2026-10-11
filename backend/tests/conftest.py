@@ -7,6 +7,7 @@ _tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
 _tmp.close()
 os.environ["DATABASE_URL"] = "sqlite:///{}".format(_tmp.name)
 os.environ["PBKDF2_ITERATIONS"] = "1000"
+os.environ["CACHE_SECONDS"] = "0"           # tests must always see fresh numbers
 os.environ["TRUST_CLIENT_DATE"] = "1"            # tests use fixed 2026 dates
 os.environ["ADMIN_EMAIL"] = "boss@example.com"
 os.environ["ADMIN_PASSWORD"] = "BossPass123"

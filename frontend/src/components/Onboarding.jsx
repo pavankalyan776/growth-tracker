@@ -7,7 +7,7 @@ import { useAuth } from "../auth";
 import { useLook } from "../look";
 import { addDays, formatFull, getToday, parseKey, toKey } from "../dateUtils";
 
-const STEPS = ["Your look", "Starting plan", "Dates", "Begin"];
+const STEPS = ["🎨 Your look", "🌱 Starting plan", "🗓️ Dates", "🚀 Begin"];
 
 function defaultEnd(today) {
   const dec31 = new Date(today.getFullYear(), 11, 31);
@@ -50,7 +50,7 @@ export default function Onboarding({ onSkipToAdmin }) {
   return (
     <div className="onboard">
       <div className="onboard-inner">
-        <p className="system-line"><span className="chip cyan"><Icon name="sparkle" />{w.coach}</span> {w.setupLine(user.name)}</p>
+        <p className="system-line"><span className="chip info">{w.coachEmoji} {w.coach}</span> {w.setupLine(user.name)}</p>
         <ol className="steps" aria-label="Setup progress">
           {STEPS.map((s, i) => (
             <li key={s} className={i === step ? "is-current" : i < step ? "is-done" : ""} aria-current={i === step ? "step" : undefined}>
@@ -59,10 +59,10 @@ export default function Onboarding({ onSkipToAdmin }) {
           ))}
         </ol>
 
-        <div className="panel onboard-card">
+        <div className="card onboard-card">
           {step === 0 && (
             <>
-              <h2 className="display">Make it yours</h2>
+              <h2 className="display">Make it yours 🎨</h2>
               <p className="muted">You can change all of this later in Profile.</p>
               <Appearance />
               <div className="field">
@@ -87,8 +87,10 @@ export default function Onboarding({ onSkipToAdmin }) {
                 {templates.map((t) => (
                   <button key={t.key} type="button" role="radio" aria-checked={template === t.key}
                     className={`choice${template === t.key ? " is-on" : ""}`} onClick={() => setTemplate(t.key)}>
+                    <span className="choice-emoji emoji" aria-hidden="true">{t.emoji}</span>
                     <b className="display">{t.label}</b>
                     <span>{t.desc}</span>
+                    {t.preview && t.preview.length > 0 ? <span className="small faint">e.g. {t.preview.slice(0, 3).join(", ")}</span> : null}
                     <small className="chip">{t.quests === 0 ? `No ${w.habitsLower} yet` : `${t.quests} ${w.habitsLower} across the week`}</small>
                   </button>
                 ))}
@@ -98,7 +100,7 @@ export default function Onboarding({ onSkipToAdmin }) {
 
           {step === 2 && (
             <>
-              <h2 className="display">Set your plan window</h2>
+              <h2 className="display">Set your plan window 🗓️</h2>
               <p className="muted">Streaks, XP and coins only count inside this window. Start in the past to log days you've already done.</p>
               <div className="row wrap" style={{ marginBottom: 16 }}>
                 {[[30, "30 days"], [60, "60 days"], [100, "100 days"], [180, "180 days"]].map(([n, label]) => (
@@ -117,10 +119,10 @@ export default function Onboarding({ onSkipToAdmin }) {
 
           {step === 3 && (
             <>
-              <h2 className="display">{w.readyTitle}</h2>
+              <h2 className="display">{w.readyTitle} 🚀</h2>
               <dl className="summary">
                 <div><dt>Name</dt><dd>{user.name}</dd></div>
-                <div><dt>{w.habits}</dt><dd>{chosen ? chosen.label : template}</dd></div>
+                <div><dt>{w.habits}</dt><dd>{chosen ? `${chosen.emoji} ${chosen.label}` : template}</dd></div>
                 <div><dt>Plan</dt><dd>{formatFull(parseKey(start))} to {formatFull(parseKey(end))}</dd></div>
                 <div><dt>Length</dt><dd>{days} days</dd></div>
               </dl>
@@ -133,7 +135,7 @@ export default function Onboarding({ onSkipToAdmin }) {
             {step < 3 ? (
               <button type="button" className="btn" onClick={() => setStep(step + 1)} disabled={step === 2 && !!planError}>Continue</button>
             ) : (
-              <button type="button" className="btn" onClick={finish} disabled={busy}>{busy ? "One moment…" : w.enter}</button>
+              <button type="button" className="btn" onClick={finish} disabled={busy}>{busy ? "One moment…" : `${w.enter} 🚀`}</button>
             )}
           </div>
         </div>

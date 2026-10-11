@@ -39,13 +39,13 @@ def test_overview_numbers(signup, admin):
     o = admin.get("/api/admin/overview", params={"today": "2026-09-18"}).json()
     t = o["totals"]
     assert t["users"] == 3 and t["admins"] == 1 and t["onboarded"] == 1
-    assert t["quests_cleared"] == 21
+    assert t["tasks_done"] == 21
     steps = {f["step"]: f["count"] for f in o["funnel"]}
-    assert steps["Registered"] == 3 and steps["Cleared a quest"] == 1 and steps["3-day streak"] == 1
+    assert steps["Registered"] == 3 and steps["Finished a task"] == 1 and steps["3-day streak"] == 1
     assert steps["7-day streak"] == 0
     assert len(o["series"]) == 30
     last = [s for s in o["series"] if s["date"] == "2026-09-18"][0]
-    assert last["active_hunters"] == 1 and last["quests_cleared"] == 7
+    assert last["active_members"] == 1 and last["tasks_done"] == 7
     assert {r["rank"] for r in o["rank_distribution"]} == {"E", "D", "C", "B", "A", "S"}
     assert any(a["action"] == "auth.register" for a in o["recent_audit"])
 

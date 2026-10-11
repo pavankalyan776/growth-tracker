@@ -13,6 +13,15 @@ export const AUDIT_LABEL = {
   "admin.view_user": "profile viewed",
   "admin.bootstrap": "admin account created",
   "admin.promote_cli": "promoted to admin (command line)",
+  "content.dare_add": "dare added",
+  "content.dare_edit": "dare edited",
+  "content.dare_delete": "dare deleted",
+  "content.announcement_add": "announcement added",
+  "content.announcement_edit": "announcement edited",
+  "content.announcement_delete": "announcement deleted",
+  "content.template_add": "starting plan added",
+  "content.template_edit": "starting plan edited",
+  "content.template_delete": "starting plan deleted",
 };
 export const auditLabel = (a) => AUDIT_LABEL[a] || a;
-export const auditTone = (a) => (a.startsWith("admin.") ? "cyan" : a === "user.delete_self" ? "red" : "");
+export const auditTone = (a) => (a.startsWith("admin.") ? "info" : a.startsWith("content.") ? "pink" : a === "user.delete_self" ? "danger" : "");

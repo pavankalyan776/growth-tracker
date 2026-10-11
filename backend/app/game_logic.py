@@ -19,8 +19,8 @@ from typing import Any, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
 from sqlalchemy.orm import Session
 
-from . import crud, models
-from .dares import DARE_COINS, DARE_XP, dare_for
+from . import cache, crud, models
+from .dares import DARE_COINS, DARE_XP, build_pool, dare_for, lookup
 
 STAT_KEYS = ["STR", "INT", "PER", "VIT", "AGI"]
 MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July",
@@ -35,6 +35,13 @@ BOSS_XP = 50
 BOSS_COINS = 40
 BOSS_NAMES = ["The Snooze Hydra", "Procrastination Golem", "The Doubt Wraith", "Scroll Specter", "Couch Dragon",
               "Excuse Titan", "The Distraction Swarm", "Comparison Imp", "Midnight Gremlin", "The Perfection Sphinx"]
+BOSS_EMOJI = ["🐍", "🗿", "👻", "📱", "🐉", "⛰️", "🐝", "😈", "🌙", "🦁"]
+
+CHALLENGE_XP = 30             # per challenge a member builds and finishes
+CHALLENGE_COINS = 15
+CHALLENGE_WEEKLY_CAP = 2      # at most this many challenges per week pay a reward (the rest still count as done)
+CHALLENGE_MAX_ACTIVE = 5
+CHALLENGE_MIN_DAYS, CHALLENGE_MAX_DAYS = 3, 90
 
 SHIELD_COST = 30
 LOGIN_BONUS = 5
@@ -46,45 +53,49 @@ MONTHLY_TARGET = 80   # average completion % needed for the monthly achievement
 RANKS = [("E", 1), ("D", 6), ("C", 16), ("B", 31), ("A", 51), ("S", 76)]
 
 MILESTONE_DEFS = [
-    {"id": "first_blood", "calm": {"title": "First Step", "desc": "Complete your first habit."}, "title": "First Blood", "desc": "Clear your first quest.",
+    {"id": "first_blood", "emoji": "🩸", "calm": {"title": "First Step", "desc": "Complete your first habit."}, "title": "First Blood", "desc": "Clear your first quest.",
      "reward": 20, "cond": lambda s: s["total_completed"] >= 1},
-    {"id": "week_streak", "title": "One Week Strong", "desc": "Reach a 7-day streak.",
+    {"id": "week_streak", "emoji": "🔥", "title": "One Week Strong", "desc": "Reach a 7-day streak.",
      "reward": 50, "cond": lambda s: s["longest_streak"] >= 7},
-    {"id": "month_streak", "calm": {"title": "A Month of Habits", "desc": "Reach a 30-day streak."}, "title": "Iron Will", "desc": "Reach a 30-day streak.",
+    {"id": "month_streak", "emoji": "🛡️", "calm": {"title": "A Month of Habits", "desc": "Reach a 30-day streak."}, "title": "Iron Will", "desc": "Reach a 30-day streak.",
      "reward": 200, "cond": lambda s: s["longest_streak"] >= 30},
-    {"id": "comeback", "title": "Comeback Kid", "desc": "Clear a perfect day right after a missed one.",
+    {"id": "comeback", "emoji": "💪", "title": "Comeback Kid", "desc": "Clear a perfect day right after a missed one.",
      "reward": 40, "cond": lambda s: s["comeback"]},
-    {"id": "journal_keeper", "calm": {"title": "Thoughtful Writer", "desc": "Write 7 journal entries."}, "title": "Reflective Hunter", "desc": "Write 7 journal entries.",
+    {"id": "journal_keeper", "emoji": "📓", "calm": {"title": "Thoughtful Writer", "desc": "Write 7 journal entries."}, "title": "Reflective Hunter", "desc": "Write 7 journal entries.",
      "reward": 30, "cond": lambda s: s["journal_count"] >= 7},
-    {"id": "rank_d", "calm": {"title": "New Tier: Sprout", "desc": "Grow out of the Seed tier."}, "title": "Rank Up: D", "desc": "Climb out of E-rank.",
+    {"id": "rank_d", "emoji": "🌱", "calm": {"title": "New Tier: Sprout", "desc": "Grow out of the Seed tier."}, "title": "Rank Up: D", "desc": "Climb out of E-rank.",
      "reward": 30, "cond": lambda s: s["rank"] != "E"},
-    {"id": "rank_c", "calm": {"title": "New Tier: Sapling", "desc": "Reach the Sapling tier."}, "title": "Rank Up: C", "desc": "Reach C-rank.",
+    {"id": "rank_c", "emoji": "🌿", "calm": {"title": "New Tier: Sapling", "desc": "Reach the Sapling tier."}, "title": "Rank Up: C", "desc": "Reach C-rank.",
      "reward": 60, "cond": lambda s: s["rank"] in ("C", "B", "A", "S")},
-    {"id": "rank_b", "calm": {"title": "New Tier: Tree", "desc": "Reach the Tree tier."}, "title": "Rank Up: B", "desc": "Reach B-rank.",
+    {"id": "rank_b", "emoji": "🌳", "calm": {"title": "New Tier: Tree", "desc": "Reach the Tree tier."}, "title": "Rank Up: B", "desc": "Reach B-rank.",
      "reward": 100, "cond": lambda s: s["rank"] in ("B", "A", "S")},
-    {"id": "rank_a", "calm": {"title": "New Tier: Grove", "desc": "Reach the Grove tier."}, "title": "Rank Up: A", "desc": "Reach A-rank.",
+    {"id": "rank_a", "emoji": "🏞️", "calm": {"title": "New Tier: Grove", "desc": "Reach the Grove tier."}, "title": "Rank Up: A", "desc": "Reach A-rank.",
      "reward": 150, "cond": lambda s: s["rank"] in ("A", "S")},
-    {"id": "rank_s", "calm": {"title": "New Tier: Forest", "desc": "Reach the top tier."}, "title": "Rank Up: S, Shadow Monarch", "desc": "Reach the top rank.",
+    {"id": "rank_s", "emoji": "👑", "calm": {"title": "New Tier: Forest", "desc": "Reach the top tier."}, "title": "Rank Up: S, Shadow Monarch", "desc": "Reach the top rank.",
      "reward": 300, "cond": lambda s: s["rank"] == "S"},
-    {"id": "hundred_quests", "calm": {"title": "Hundred Habits", "desc": "Complete 100 habits in total."}, "title": "Centurion", "desc": "Clear 100 total quests.",
+    {"id": "hundred_quests", "emoji": "💯", "calm": {"title": "Hundred Habits", "desc": "Complete 100 habits in total."}, "title": "Centurion", "desc": "Clear 100 total quests.",
      "reward": 100, "cond": lambda s: s["total_completed"] >= 100},
-    {"id": "halfway", "title": "Halfway Point", "desc": "Reach the midpoint of your plan.",
+    {"id": "halfway", "emoji": "⛰️", "title": "Halfway Point", "desc": "Reach the midpoint of your plan.",
      "reward": 50, "cond": lambda s: s["today"] >= s["midpoint"]},
-    {"id": "first_dare", "title": "Dare Accepted", "desc": "Finish your first Daily Dare.",
+    {"id": "first_dare", "emoji": "🎲", "title": "Dare Accepted", "desc": "Finish your first Daily Dare.",
      "reward": 15, "cond": lambda s: s["dares_done"] >= 1},
-    {"id": "dare_10", "title": "Daredevil", "desc": "Finish 10 Daily Dares.",
+    {"id": "dare_10", "emoji": "😎", "title": "Daredevil", "desc": "Finish 10 Daily Dares.",
      "reward": 50, "cond": lambda s: s["dares_done"] >= 10},
-    {"id": "dare_30", "title": "Fearless", "desc": "Finish 30 Daily Dares.",
+    {"id": "dare_30", "emoji": "🦸", "title": "Fearless", "desc": "Finish 30 Daily Dares.",
      "reward": 120, "cond": lambda s: s["dares_done"] >= 30},
-    {"id": "boss_1", "calm": {"title": "Goal Getter", "desc": "Reach your first weekly goal."}, "title": "Boss Slayer", "desc": "Defeat your first weekly boss.",
+    {"id": "boss_1", "emoji": "⚔️", "calm": {"title": "Goal Getter", "desc": "Reach your first weekly goal."}, "title": "Boss Slayer", "desc": "Defeat your first weekly boss.",
      "reward": 50, "cond": lambda s: s["bosses_defeated"] >= 1},
-    {"id": "boss_4", "calm": {"title": "Goal Machine", "desc": "Reach 4 weekly goals."}, "title": "Boss Hunter", "desc": "Defeat 4 weekly bosses.",
+    {"id": "boss_4", "emoji": "🏹", "calm": {"title": "Goal Machine", "desc": "Reach 4 weekly goals."}, "title": "Boss Hunter", "desc": "Defeat 4 weekly bosses.",
      "reward": 150, "cond": lambda s: s["bosses_defeated"] >= 4},
-    {"id": "perfect_10", "title": "Perfect Ten", "desc": "Clear every quest on 10 days.",
+    {"id": "perfect_10", "emoji": "🌟", "title": "Perfect Ten", "desc": "Clear every quest on 10 days.",
      "reward": 60, "cond": lambda s: s["perfect_days"] >= 10},
-    {"id": "fortnight", "title": "Fortnight Flame", "desc": "Reach a 14-day streak.",
+    {"id": "fortnight", "emoji": "🔥", "title": "Fortnight Flame", "desc": "Reach a 14-day streak.",
      "reward": 80, "cond": lambda s: s["longest_streak"] >= 14},
-    {"id": "finisher", "calm": {"title": "Plan Complete", "desc": "Reach the last day of your plan."}, "title": "Final Boss Cleared", "desc": "Reach the last day of your plan.",
+    {"id": "maker", "emoji": "🧩", "title": "Challenge Maker", "desc": "Finish a challenge you built yourself.",
+     "reward": 30, "cond": lambda s: s["challenges_done"] >= 1},
+    {"id": "maker_5", "emoji": "🏅", "title": "Challenge Champion", "desc": "Finish 5 challenges you built yourself.",
+     "reward": 100, "cond": lambda s: s["challenges_done"] >= 5},
+    {"id": "finisher", "emoji": "🏆", "calm": {"title": "Plan Complete", "desc": "Reach the last day of your plan."}, "title": "Final Boss Cleared", "desc": "Reach the last day of your plan.",
      "reward": 500, "cond": lambda s: s["today"] >= s["end"]},
 ]
 
@@ -128,8 +139,10 @@ def month_end(y: int, m: int) -> date:
 class Snapshot:
     def __init__(self, start: Optional[date], end: Optional[date], quests: Iterable[models.Quest],
                  completions: Iterable[Tuple[int, date]], shields: Iterable[date],
-                 journal: Dict[date, Any], dares: Iterable[date] = (), user_id: int = 0):
-        # A hunter who hasn't finished onboarding has no plan yet: an empty window.
+                 journal: Dict[date, Any], dares: Iterable[date] = (), user_id: int = 0,
+                 dare_keys: Optional[Dict[date, str]] = None, custom_dares: Iterable[Any] = (),
+                 challenges: Iterable[Any] = (), checkins: Optional[Dict[int, List[date]]] = None):
+        # A member who hasn't finished onboarding has no plan yet: an empty window.
         self.start = start
         self.end = end
         self.quests_by_type: Dict[str, List[models.Quest]] = {"weekday": [], "saturday": [], "sunday": []}
@@ -141,9 +154,17 @@ class Snapshot:
         for quest_id, d in completions:
             self.done[d].add(quest_id)
         self.shields: Set[date] = set(shields)
-        self.journal = journal
+        self.journal = journal                      # date -> True (only the dates are loaded, never the text)
         self.dares: Set[date] = set(dares)
+        self.dare_keys: Dict[date, str] = dare_keys or {}
+        self.custom_dares = list(custom_dares)
         self.user_id = user_id
+        self.challenges = list(challenges)
+        self.checkins: Dict[int, List[date]] = checkins or {}
+        # Everything below is derived from the data above and never changes for the life of a Snapshot,
+        # so each answer is worked out once and reused (a request asks the same questions several times).
+        self._score: Dict[date, dict] = {}
+        self._memo: Dict[Any, Any] = {}
 
     @classmethod
     def load(cls, db: Session, user: models.User) -> "Snapshot":
@@ -152,10 +173,20 @@ class Snapshot:
         comps = db.query(models.Completion.quest_id, models.Completion.date).filter(
             models.Completion.user_id == uid, models.Completion.completed == True).all()  # noqa: E712
         shields = [r[0] for r in db.query(models.Shield.date).filter(models.Shield.user_id == uid).all()]
-        journal = {j.date: j for j in db.query(models.Journal).filter(models.Journal.user_id == uid).all()}
-        dares = [r[0] for r in db.query(models.DareDone.date).filter(models.DareDone.user_id == uid).all()]
+        # Only the DATES of journal entries: the text is fetched separately and only where it is needed.
+        journal = {r[0]: True for r in db.query(models.Journal.date).filter(models.Journal.user_id == uid).all()}
+        dare_rows = db.query(models.DareDone.date, models.DareDone.dare_key).filter(
+            models.DareDone.user_id == uid).all()
+        custom = db.query(models.CustomDare).all()
+        challenges = db.query(models.Challenge).filter(models.Challenge.user_id == uid).all()
+        checkins: Dict[int, List[date]] = defaultdict(list)
+        if challenges:
+            for cid, d in db.query(models.ChallengeCheckin.challenge_id, models.ChallengeCheckin.date).filter(
+                    models.ChallengeCheckin.user_id == uid).all():
+                checkins[cid].append(d)
         return cls(user.plan_start, user.plan_end, quests, [(c[0], c[1]) for c in comps], shields, journal,
-                   dares, uid)
+                   [r[0] for r in dare_rows], uid, {r[0]: r[1] for r in dare_rows if r[1]}, custom,
+                   challenges, checkins)
 
     @classmethod
     def load_many(cls, db: Session, users: List[models.User]) -> Dict[int, "Snapshot"]:
@@ -176,8 +207,48 @@ class Snapshot:
         for uid, d in db.query(models.DareDone.user_id, models.DareDone.date).filter(
                 models.DareDone.user_id.in_(ids)).all():
             dares[uid].append(d)
-        return {u.id: cls(u.plan_start, u.plan_end, quests[u.id], comps[u.id], shields[u.id], {}, dares[u.id], u.id)
+        challenges, checkins = defaultdict(list), defaultdict(lambda: defaultdict(list))
+        for c in db.query(models.Challenge).filter(models.Challenge.user_id.in_(ids)).all():
+            challenges[c.user_id].append(c)
+        if challenges:
+            for uid, cid, d in db.query(models.ChallengeCheckin.user_id, models.ChallengeCheckin.challenge_id,
+                                        models.ChallengeCheckin.date).filter(
+                    models.ChallengeCheckin.user_id.in_(ids)).all():
+                checkins[uid][cid].append(d)
+        return {u.id: cls(u.plan_start, u.plan_end, quests[u.id], comps[u.id], shields[u.id], {}, dares[u.id], u.id,
+                          challenges=challenges[u.id], checkins=checkins[u.id])
                 for u in users}
+
+    # ---- in-place updates (so a write doesn't have to reload everything it just wrote) ----
+    def _changed(self, d: Optional[date] = None) -> None:
+        if d is not None:
+            self._score.pop(d, None)
+        self._memo.clear()
+
+    def apply_completion(self, quest_id: int, d: date, completed: bool) -> None:
+        if completed:
+            self.done[d].add(quest_id)
+        else:
+            self.done[d].discard(quest_id)
+        self._changed(d)
+
+    def apply_dare(self, d: date, done: bool, key: Optional[str] = None) -> None:
+        if done:
+            self.dares.add(d)
+            if key:
+                self.dare_keys[d] = key
+        else:
+            self.dares.discard(d)
+            self.dare_keys.pop(d, None)
+        self._changed()
+
+    def apply_checkin(self, challenge_id: int, d: date, done: bool) -> None:
+        dates = self.checkins.setdefault(challenge_id, [])
+        if done and d not in dates:
+            dates.append(d)
+        elif not done and d in dates:
+            dates.remove(d)
+        self._changed()
 
     # ---- plan window ----
     @property
@@ -208,11 +279,14 @@ class Snapshot:
         return self.done.get(d, set())
 
     def score(self, d: date) -> dict:
-        tasks = self.tasks(d)
-        ids = self.done_ids(d)
-        count = sum(1 for t in tasks if t.id in ids)
-        total = len(tasks)
-        return {"count": count, "total": total, "pct": round(count / total * 100) if total else 0}
+        hit = self._score.get(d)
+        if hit is None:
+            tasks = self.tasks(d)
+            ids = self.done_ids(d)
+            count = sum(1 for t in tasks if t.id in ids)
+            total = len(tasks)
+            hit = self._score[d] = {"count": count, "total": total, "pct": round(count / total * 100) if total else 0}
+        return hit
 
     def is_perfect(self, d: date) -> bool:
         s = self.score(d)
@@ -223,6 +297,57 @@ class Snapshot:
 
     def dare_done(self, d: date) -> bool:
         return d in self.dares
+
+    def dare_for_day(self, d: date) -> dict:
+        """The dare for a day. Finished days keep the dare that was done; others come from the pool as it was that day."""
+        key = self.dare_keys.get(d)
+        if key:
+            found = lookup(key, self.custom_dares)
+            if found:
+                return found
+        if d in self.dares:                  # finished before v5 (no key stored): back then the pool was the built-ins
+            return dare_for(self.user_id, d)
+        return dare_for(self.user_id, d, build_pool(self.custom_dares, d))
+
+    def challenge_states(self, today: date) -> List[dict]:
+        """Every challenge the member built, with progress, status and whether it pays a reward."""
+        memo = self._memo.get(("ch", today))
+        if memo is not None:
+            return memo
+        states = []
+        for c in sorted(self.challenges, key=lambda c: c.id):
+            dates = sorted(self.checkins.get(c.id, ()))
+            done = len(dates)
+            completed_on = dates[c.target - 1] if done >= c.target else None
+            if c.archived:
+                status = "archived"
+            elif completed_on is not None:
+                status = "done"
+            elif today < c.start_date:
+                status = "upcoming"
+            elif today > c.end_date:
+                status = "missed"
+            else:
+                status = "active"
+            states.append({
+                "id": c.id, "title": c.title, "emoji": c.emoji, "target": c.target, "done": min(done, c.target),
+                "start": c.start_date.isoformat(), "end": c.end_date.isoformat(), "status": status,
+                "checked_today": today in dates, "completed_on": completed_on.isoformat() if completed_on else None,
+                "days_left": max(0, (c.end_date - today).days) if status == "active" else 0,
+                "span": (c.end_date - c.start_date).days + 1, "rewarded": False,
+                "xp": CHALLENGE_XP, "coins": CHALLENGE_COINS, "_completed_on": completed_on,
+            })
+        per_week: Dict[date, int] = defaultdict(int)
+        for st in sorted((x for x in states if x["_completed_on"] and x["_completed_on"] <= today),
+                         key=lambda x: (x["_completed_on"], x["id"])):
+            wk = monday_of(st["_completed_on"])
+            if per_week[wk] < CHALLENGE_WEEKLY_CAP:
+                per_week[wk] += 1
+                st["rewarded"] = True
+        for st in states:
+            del st["_completed_on"]
+        self._memo[("ch", today)] = states
+        return states
 
     def is_good(self, d: date) -> bool:
         """A day that keeps the streak alive: perfect, or protected by a shield."""
@@ -243,6 +368,7 @@ def boss_week(snap: Snapshot, monday: date, today: date, index: int = 0) -> Opti
     hp = max(1, math.ceil(possible * BOSS_TARGET / 100))
     return {
         "week_start": monday.isoformat(), "name": BOSS_NAMES[index % len(BOSS_NAMES)],
+        "emoji": BOSS_EMOJI[index % len(BOSS_EMOJI)],
         "possible": possible, "done": done, "hp": hp, "damage": min(done, hp), "remaining": max(0, hp - done),
         "defeated": done >= hp, "reward_coins": BOSS_COINS, "reward_xp": BOSS_XP,
         "days_left": max(0, (monday + timedelta(days=6) - today).days),
@@ -251,9 +377,12 @@ def boss_week(snap: Snapshot, monday: date, today: date, index: int = 0) -> Opti
 
 def boss_weeks(snap: Snapshot, today: date) -> List[dict]:
     """Every week from the plan start up to today's week, oldest first."""
+    hit = snap._memo.get(("boss", today))
+    if hit is not None:
+        return hit
+    out = snap._memo[("boss", today)] = []
     if not snap.has_plan or today < snap.start:
-        return []
-    out = []
+        return out
     cur, last, i = monday_of(snap.start), monday_of(min(today, snap.end)), 0
     while cur <= last:
         week = boss_week(snap, cur, today, i)
@@ -290,6 +419,9 @@ def next_rank_info(level: int, xp: int) -> Optional[dict]:
 
 
 def compute_progress(snap: Snapshot, today: date) -> dict:
+    hit = snap._memo.get(("progress", today))
+    if hit is not None:
+        return hit
     xp = 0
     total_completed = 0
     perfect_days = 0
@@ -311,15 +443,22 @@ def compute_progress(snap: Snapshot, today: date) -> dict:
                 stat_totals[t.stat] += XP_PER_QUEST
     bosses = sum(1 for w in boss_weeks(snap, today) if w["defeated"])
     xp += bosses * BOSS_XP
+    states = snap.challenge_states(today)
+    xp += sum(1 for c in states if c["rewarded"]) * CHALLENGE_XP
     level = level_from_xp(xp)
-    return {
+    result = snap._memo[("progress", today)] = {
         "total_xp": xp, "level": level, "rank": rank_from_level(level),
         "total_completed": total_completed, "perfect_days": perfect_days,
         "stat_totals": stat_totals, "dares_done": dares_done, "bosses_defeated": bosses,
+        "challenges_done": sum(1 for c in states if c["completed_on"]),
     }
+    return result
 
 
 def compute_streaks(snap: Snapshot, today: date):
+    hit = snap._memo.get(("streaks", today))
+    if hit is not None:
+        return hit
     days = snap.tracked_days(today)
     run = longest = 0
     flags: List[bool] = []
@@ -340,6 +479,7 @@ def compute_streaks(snap: Snapshot, today: date):
             current += 1
         else:
             break
+    snap._memo[("streaks", today)] = (current, longest)
     return current, longest
 
 
@@ -361,11 +501,12 @@ def reconcile(db: Session, snap: Snapshot, user: models.User, today: date) -> Li
     if not snap.has_plan:
         return events
     uid = user.id
-    existing = db.query(models.CoinTransaction).filter(models.CoinTransaction.user_id == uid).all()
-    login_dates = {t.date for t in existing if t.reason == "Daily login"}
-    perfect_dates = {t.date for t in existing if t.reason == "Perfect day"}
-    dare_dates = {t.date for t in existing if t.reason == "Daily dare"}
-    reasons = {t.reason for t in existing}
+    existing = db.query(models.CoinTransaction.date, models.CoinTransaction.reason).filter(
+        models.CoinTransaction.user_id == uid).all()
+    login_dates = {t[0] for t in existing if t[1] == "Daily login"}
+    perfect_dates = {t[0] for t in existing if t[1] == "Perfect day"}
+    dare_dates = {t[0] for t in existing if t[1] == "Daily dare"}
+    reasons = {t[1] for t in existing}
 
     def grant(amount: int, reason: str, on: date, kind: str, **extra: Any) -> None:
         crud.add_coin_tx(db, uid, on, amount, reason, commit=False)
@@ -394,6 +535,12 @@ def reconcile(db: Session, snap: Snapshot, user: models.User, today: date) -> Li
         if w["defeated"] and reason not in reasons:
             grant(BOSS_COINS, reason, today, "boss", boss=w["name"])
 
+    # 2d) Challenges the member built and finished
+    for c in snap.challenge_states(today):
+        reason = "Challenge done {}".format(c["id"])
+        if c["rewarded"] and reason not in reasons:
+            grant(CHALLENGE_COINS, reason, today, "challenge", challenge=c["title"], emoji=c["emoji"])
+
     # 3) Monthly achievement: a finished month with average completion >= target
     for (y, m) in sorted({(d.year, d.month) for d in daterange(snap.start, snap.end)}):
         last = month_end(y, m)
@@ -411,13 +558,14 @@ def reconcile(db: Session, snap: Snapshot, user: models.User, today: date) -> Li
         "today": today, "journal_count": len(snap.journal), "comeback": has_comeback(snap, today),
         "midpoint": snap.midpoint(), "end": snap.end, "dares_done": prog["dares_done"],
         "bosses_defeated": prog["bosses_defeated"], "perfect_days": prog["perfect_days"],
+        "challenges_done": prog["challenges_done"],
     }
-    achieved = {m.milestone_key for m in
-                db.query(models.MilestoneAchieved).filter(models.MilestoneAchieved.user_id == uid).all()}
+    achieved = {r[0] for r in db.query(models.MilestoneAchieved.milestone_key).filter(
+        models.MilestoneAchieved.user_id == uid).all()}
     for m in MILESTONE_DEFS:
         if m["id"] not in achieved and m["cond"](ctx):
             db.add(models.MilestoneAchieved(user_id=uid, milestone_key=m["id"]))
-            grant(m["reward"], "Milestone: " + m["title"], today, "milestone")
+            grant(m["reward"], "Milestone: " + m["title"], today, "milestone", emoji=m.get("emoji", "🏆"))
 
     if events:
         db.commit()
@@ -452,8 +600,11 @@ def build_overview(db: Session, snap: Snapshot, user: models.User, today: date) 
     return {
         "avatar": user.avatar, "public_board": bool(user.public_board),
         "boss": boss, "bosses_defeated": prog["bosses_defeated"], "dares_done": prog["dares_done"],
+        "challenges_done": prog["challenges_done"],
+        "challenges": [c for c in snap.challenge_states(today) if c["status"] in ("active", "upcoming", "done")][-20:],
+        "announcements": crud.active_announcements(db, today),
         "hunter_name": user.name,
-        "title": title["label"], "title_calm": title["calm"],
+        "title": title["label"], "title_calm": title["calm"], "title_emoji": title.get("emoji", "✨"),
         "theme": theme_payload(user.theme_key),
         "today": today.isoformat(),
         "in_plan": snap.in_plan(today),
@@ -478,9 +629,10 @@ def build_overview(db: Session, snap: Snapshot, user: models.User, today: date) 
     }
 
 
-def build_day(snap: Snapshot, d: date, today: date) -> dict:
+def build_day(snap: Snapshot, d: date, today: date, journal: Any = None) -> dict:
+    """`journal` is that day's row (the router fetches just that one); the Snapshot holds dates only."""
     ids = snap.done_ids(d)
-    j = snap.journal.get(d)
+    j = journal
     score = snap.score(d)
     return {
         "date": d.isoformat(),
@@ -493,7 +645,7 @@ def build_day(snap: Snapshot, d: date, today: date) -> dict:
             for t in snap.tasks(d)
         ],
         "score": score,
-        "dare": ({**dare_for(snap.user_id, d), "done": snap.dare_done(d), "xp": DARE_XP, "coins": DARE_COINS}
+        "dare": ({**snap.dare_for_day(d), "done": snap.dare_done(d), "xp": DARE_XP, "coins": DARE_COINS}
                  if snap.in_plan(d) else None),
         "shielded": snap.is_shielded(d),
         "can_shield": snap.in_plan(d) and d < today and bool(snap.tasks(d)) and not snap.is_good(d),
@@ -530,7 +682,9 @@ def build_heatmap(snap: Snapshot, today: date) -> List[dict]:
     return out
 
 
-def build_analytics(snap: Snapshot, today: date) -> dict:
+def build_analytics(snap: Snapshot, today: date, struggles: Optional[Dict[date, str]] = None) -> dict:
+    """`struggles` maps a date to what the member wrote as hard that day (only the member ever sees it)."""
+    struggles = struggles or {}
     days = snap.tracked_days(today)
     scores = {d: snap.score(d) for d in days}
 
@@ -590,9 +744,7 @@ def build_analytics(snap: Snapshot, today: date) -> dict:
     missed = []
     for d in reversed(days):
         if d != today and snap.tasks(d) and not snap.is_good(d):
-            j = snap.journal.get(d)
-            missed.append({"date": d.isoformat(), "pct": scores[d]["pct"],
-                           "struggle": j.struggle if j else ""})
+            missed.append({"date": d.isoformat(), "pct": scores[d]["pct"], "struggle": struggles.get(d, "")})
     current, longest = compute_streaks(snap, today)
     prog = compute_progress(snap, today)
 
@@ -622,7 +774,7 @@ def summarize(snap: Snapshot, today: date) -> dict:
         "tracked_days": len(days), "avg_completion": _avg(pcts), "last7_completion": _avg(last7),
         "quest_count": len(snap.quest_by_id), "journal_entries": len(snap.journal),
         "dares_done": prog["dares_done"], "bosses_defeated": prog["bosses_defeated"],
-        "stat_totals": prog["stat_totals"],
+        "challenges_done": prog["challenges_done"], "stat_totals": prog["stat_totals"],
     }
 
 
@@ -647,8 +799,8 @@ def week_xp(snap: Snapshot, monday: date, today: date) -> int:
     return xp
 
 
-def build_board(db: Session, viewer: models.User, today: date, limit: int = 25) -> dict:
-    """Only people who opted in appear. Each row is name, avatar, level, rank letter, streak and week XP."""
+def _board_rows(db: Session, today: date) -> List[dict]:
+    """The ranked rows, the same for every viewer (so they can be cached for a few seconds)."""
     monday = monday_of(today)
     members = (db.query(models.User)
                .filter(models.User.public_board == True, models.User.is_active == True,  # noqa: E712
@@ -659,11 +811,19 @@ def build_board(db: Session, viewer: models.User, today: date, limit: int = 25) 
         snap = snaps[u.id]
         prog = compute_progress(snap, today)
         current, _ = compute_streaks(snap, today)
-        rows.append({"name": u.name, "avatar": u.avatar, "level": prog["level"], "rank": prog["rank"],
-                     "streak": current, "week_xp": week_xp(snap, monday, today), "is_me": u.id == viewer.id})
+        rows.append({"id": u.id, "name": u.name, "avatar": u.avatar, "level": prog["level"], "rank": prog["rank"],
+                     "streak": current, "week_xp": week_xp(snap, monday, today)})
     rows.sort(key=lambda r: (-r["week_xp"], -r["streak"], r["name"].lower()))
     for i, r in enumerate(rows, 1):
         r["place"] = i
+    return rows
+
+
+def build_board(db: Session, viewer: models.User, today: date, limit: int = 25) -> dict:
+    """Only people who opted in appear. Each row is name, avatar, level, rank letter, streak and week XP."""
+    monday = monday_of(today)
+    cached = cache.get_or_set(("board", today), lambda: _board_rows(db, today))
+    rows = [{k: v for k, v in r.items() if k != "id"} | {"is_me": r["id"] == viewer.id} for r in cached]
     me = next((r for r in rows if r["is_me"]), None)
     return {
         "opted_in": bool(viewer.public_board), "week_start": monday.isoformat(),

@@ -1,38 +1,39 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo } from "react";
 import AuthScreen from "./components/AuthScreen";
+import AppShell from "./components/AppShell";
 import Onboarding from "./components/Onboarding";
-import Shell from "./components/Shell";
-import Icon from "./components/icons";
 import TodayView from "./components/TodayView";
-import CalendarView from "./components/CalendarView";
-import ProgressView from "./components/ProgressView";
-import QuestManager from "./components/QuestManager";
-import ShopView from "./components/ShopView";
-import AchievementsView from "./components/AchievementsView";
-import ProfileView from "./components/ProfileView";
-import AdminDashboard from "./components/admin/AdminDashboard";
-import AdminUsers from "./components/admin/AdminUsers";
-import AdminAudit from "./components/admin/AdminAudit";
-import HallView from "./components/HallView";
+import { ErrorNote, Skeletons } from "./components/ui";
 import { AuthProvider, useAuth } from "./auth";
 import { LookProvider, useLook } from "./look";
 import { GameProvider, useGame } from "./game";
 import { useRoute } from "./router";
 
-const trackerPages = (w) => ({
-  today: { title: "Today", sub: w.todaySub },
-  calendar: { title: "Calendar", sub: "Tap a day to open it" },
-  progress: { title: "Progress", sub: "How you are really doing" },
-  hall: { title: w.hall, sub: w.hallSub },
-  quests: { title: w.habits, sub: w.habitsSub },
-  shop: { title: w.rewards, sub: w.rewardsSub },
-  achievements: { title: w.milestones, sub: w.milestonesSub },
-});
-const otherPages = (w) => ({
-  profile: { title: "Profile", sub: "Account and settings" },
-  admin: { title: "Admin overview", sub: "How the product is being used" },
-  "admin/users": { title: w.members, sub: w.membersSub },
-  "admin/audit": { title: "Audit log", sub: "Who did what, and when" },
+/* Today loads with the app. Everything else is a separate chunk, fetched when first opened and
+   pre-fetched while the browser is idle, so moving between pages never waits on a download. */
+const loaders = {
+  calendar: () => import("./components/CalendarView"),
+  quests: () => import("./components/QuestManager"),
+  challenges: () => import("./components/ChallengesView"),
+  hall: () => import("./components/HallView"),
+  progress: () => import("./components/ProgressView"),
+  shop: () => import("./components/ShopView"),
+  achievements: () => import("./components/AchievementsView"),
+  profile: () => import("./components/ProfileView"),
+};
+const pages = Object.fromEntries(Object.entries(loaders).map(([k, f]) => [k, lazy(f)]));
+const AdminApp = lazy(() => import("./components/admin/AdminApp"));
+
+const pageMeta = (w) => ({
+  today: { title: "🏠 Today", sub: w.todaySub },
+  calendar: { title: "🗓️ Plan", sub: "Tap a day to open it" },
+  quests: { title: "🗓️ Plan", sub: w.myHabitsSub },
+  challenges: { title: "🎯 Challenges", sub: "Dares, bosses and goals you design yourself" },
+  hall: { title: "🎯 Challenges", sub: w.hallSub },
+  progress: { title: "📈 Progress", sub: "How you are really doing" },
+  shop: { title: "🎁 Rewards", sub: w.rewardsSub },
+  achievements: { title: "🎁 Rewards", sub: w.milestonesSub },
+  profile: { title: "👤 Profile", sub: "Account and settings" },
 });
 
 export default function App() {
@@ -51,8 +52,8 @@ function Root() {
   if (status === "error") {
     return (
       <div className="splash">
-        <div className="panel offline" role="alert">
-          <Icon name="alert" className="lg" />
+        <div className="card offline" role="alert">
+          <span className="emoji" style={{ fontSize: "2.6rem" }} aria-hidden="true">🔌</span>
           <h1 className="display">Can't reach the server</h1>
           <p className="muted">{notice}</p>
           <button type="button" className="btn" onClick={retry}>Try again</button>
@@ -65,82 +66,77 @@ function Root() {
 }
 
 function Splash() {
-  return (
-    <div className="splash" role="status" aria-label="Loading">
-      <svg viewBox="0 0 32 32" className="splash-mark" aria-hidden="true"><path d="M5 28V14a11 11 0 0 1 22 0v14" /><path d="M11 28V17a5 5 0 0 1 10 0v11" /></svg>
-    </div>
-  );
+  return <div className="splash" role="status" aria-label="Loading"><span className="splash-mark emoji" aria-hidden="true">🌅</span></div>;
 }
 
 function Authed() {
   const { user } = useAuth();
   const route = useRoute();
-  const [skipped, setSkipped] = useState(() => {
-    try { return sessionStorage.getItem("gt-skip-onboarding") === "1"; } catch { return false; }
-  });
   const isAdmin = user.role === "admin";
-  const setSkip = (v) => {
-    try { if (v) sessionStorage.setItem("gt-skip-onboarding", "1"); else sessionStorage.removeItem("gt-skip-onboarding"); } catch { /* ignore */ }
-    setSkipped(v);
-  };
 
-  if (!user.onboarded && !(isAdmin && skipped)) {
-    return <Onboarding onSkipToAdmin={isAdmin ? () => { setSkip(true); route.navigate("admin"); } : undefined} />;
+  // A long sign-in page leaves the scroll position low; start the app at the top.
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+
+  // Admins land in the admin console, unless they opened a specific link.
+  useEffect(() => {
+    if (isAdmin && !window.location.hash.replace("#", "").replace("/", "")) route.navigate("admin");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Warm the other pages' code once the first screen is up.
+  useEffect(() => {
+    const run = () => { Object.values(loaders).forEach((f) => f().catch(() => {})); if (isAdmin) import("./components/admin/AdminApp"); };
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(run, { timeout: 4000 });
+      return () => window.cancelIdleCallback && window.cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(run, 2000);
+    return () => window.clearTimeout(id);
+  }, [isAdmin]);
+
+  if (route.name === "admin") {
+    if (!isAdmin) return <Redirect to="today" route={route} />;
+    return <Suspense fallback={<Splash />}><AdminApp route={route} /></Suspense>;
   }
-  const frame = <Frame route={route} onSetup={() => setSkip(false)} />;
-  return user.onboarded ? <GameProvider>{frame}</GameProvider> : frame;
+
+  if (!user.onboarded) {
+    return <Onboarding onSkipToAdmin={isAdmin ? () => route.navigate("admin") : undefined} />;
+  }
+  return <GameProvider><Frame route={route} /></GameProvider>;
 }
 
-function Frame({ route, onSetup }) {
-  const { user } = useAuth();
-  const game = useGame();
-  const trackerReady = user.onboarded;
-  const isAdmin = user.role === "admin";
-  const { w } = useLook();
-  const TRACKER_PAGES = useMemo(() => trackerPages(w), [w]);
-  const key = route.name === "admin" && route.param ? `admin/${route.param}` : route.name;
-  const page = TRACKER_PAGES[key] || otherPages(w)[key];
+function Redirect({ to, route }) {
+  useEffect(() => { route.navigate(to); }, [to]); // eslint-disable-line react-hooks/exhaustive-deps
+  return <Splash />;
+}
 
-  // Anything unknown, or admin pages for non-admins, falls back to the home page.
-  useEffect(() => {
-    const known = !!page;
-    const blocked = key.startsWith("admin") && !isAdmin;
-    if (!known || blocked) route.navigate(trackerReady ? "today" : isAdmin ? "admin" : "profile");
-  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
+function Frame({ route }) {
+  const game = useGame();
+  const { w } = useLook();
+  const meta = useMemo(() => pageMeta(w), [w]);
+  const page = meta[route.name];
+
+  useEffect(() => { if (!page) route.navigate("today"); }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!page) return <Splash />;
+
+  let subtitle = page.sub;
+  if (route.name === "today" && game.overview && game.overview.plan.days) {
+    const p = game.overview.plan;
+    subtitle = p.started ? `📍 Day ${Math.min(p.day, p.days)} of ${p.days} · ${p.days_left} days left` : `🗓️ Your plan starts on ${p.start}`;
+  }
 
   let body;
-  let subtitle = page ? page.sub : "";
-  if (key.startsWith("admin") && !isAdmin) body = null;
-  else if (TRACKER_PAGES[key] && !trackerReady) {
-    body = (
-      <div className="panel empty">
-        <div className="display">Set up your tracker</div>
-        <p style={{ marginBottom: 16 }}>You skipped setup. Choose your quests and plan window to start tracking.</p>
-        <button type="button" className="btn" onClick={onSetup}>Set up my tracker</button>
-      </div>
-    );
-  } else if (key === "today") {
+  if (game.loadError && !game.overview) {
+    body = <ErrorNote error={game.loadError} onRetry={game.refresh} />;
+  } else if (route.name === "today") {
     body = <TodayView dateKey={route.param} route={route} />;
-    if (game && game.overview && game.overview.plan.days) {
-      const p = game.overview.plan;
-      subtitle = p.started ? `Day ${Math.min(p.day, p.days)} of ${p.days}, ${p.days_left} days left` : `Your plan starts on ${p.start}`;
-    }
-  } else if (key === "calendar") body = <CalendarView route={route} />;
-  else if (key === "progress") body = <ProgressView route={route} />;
-  else if (key === "quests") body = <QuestManager />;
-  else if (key === "hall") body = <HallView />;
-  else if (key === "shop") body = <ShopView />;
-  else if (key === "achievements") body = <AchievementsView />;
-  else if (key === "profile") body = <ProfileView trackerReady={trackerReady} />;
-  else if (key === "admin") body = <AdminDashboard />;
-  else if (key === "admin/users") body = <AdminUsers />;
-  else if (key === "admin/audit") body = <AdminAudit />;
+  } else {
+    const Page = pages[route.name];
+    body = <Suspense fallback={<Skeletons n={3} h={140} />}><Page route={route} trackerReady /></Suspense>;
+  }
 
   return (
-    <Shell route={route} title={page ? page.title : ""} subtitle={subtitle} trackerReady={trackerReady}>
-      {game && game.loadError && !game.overview ? (
-        <div className="alert error" role="alert"><Icon name="alert" />{game.loadError} <button type="button" className="link-btn" onClick={game.refresh}>Retry</button></div>
-      ) : body}
-    </Shell>
+    <AppShell route={route} title={page.title} subtitle={subtitle} trackerReady>
+      {body}
+    </AppShell>
   );
 }

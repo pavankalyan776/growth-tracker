@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import Gate from "./Gate";
+import { Ring } from "./ui";
 import Icon from "./icons";
 import { useAuth } from "../auth";
 import { useLook } from "../look";
@@ -13,19 +13,19 @@ function GateDemo({ label }) {
     const id = window.setTimeout(() => setN((v) => (v >= 7 ? 0 : v + 1)), n === 7 ? 2200 : n === 0 ? 900 : 650);
     return () => window.clearTimeout(id);
   }, [n]);
-  return <Gate count={n} total={7} size={300} label={label} />;
+  return <Ring count={n} total={7} size={260} stroke={20} cap={label} closedCap="All done!" />;
 }
 
 const FACTS = {
   adventure: [
-    { icon: "flame", title: "Streaks with teeth", body: "Miss a day and the System notices. A shield can save the streak." },
-    { icon: "swords", title: "Bosses and dares", body: "A weekly boss to beat and a daily dare to try. Optional, and worth it." },
-    { icon: "trophy", title: "Rank from E to S", body: "Nineteen milestones between your first quest and Shadow Monarch." },
+    { emoji: "🔥", title: "Streaks with teeth", body: "Miss a day and the System notices. A shield can save the streak." },
+    { emoji: "⚔️", title: "Bosses, dares and your own challenges", body: "Beat the weekly boss, try a daily dare, or build a challenge in a minute." },
+    { emoji: "🏆", title: "Rank from E to S", body: "22 milestones between your first quest and Shadow Monarch." },
   ],
   calm: [
-    { icon: "flame", title: "Streaks that keep you going", body: "Do your habits day after day. A streak shield can rescue a missed day." },
-    { icon: "target", title: "Goals and dares", body: "A small daily dare and a weekly goal keep things fresh. Optional, and rewarding." },
-    { icon: "leaf", title: "Grow from Seed to Forest", body: "Nineteen milestones mark your progress. No real money, ever." },
+    { emoji: "🔥", title: "Streaks that keep you going", body: "Do your habits day after day. A streak shield can rescue a missed day." },
+    { emoji: "🎯", title: "Goals, dares and your own challenges", body: "A small daily dare, a weekly goal, and challenges you design yourself." },
+    { emoji: "🌳", title: "Grow from Seed to Forest", body: "22 milestones mark your progress. No real money, ever." },
   ],
 };
 
@@ -65,11 +65,11 @@ export default function AuthScreen() {
     <div className="auth">
       <section className="auth-hero" aria-label="About Growth Tracker">
         <div className="auth-brand">
-          <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 28V14a11 11 0 0 1 22 0v14" /><path d="M11 28V17a5 5 0 0 1 10 0v11" /></svg>
+          <span className="brand-mark emoji" aria-hidden="true">🌅</span>
           <span className="display">Growth Tracker</span>
           <span className="spacer" />
           <div className="seg auth-style" role="radiogroup" aria-label="Look and feel">
-            {[["adventure", "Adventure"], ["calm", "Calm"]].map(([v, label]) => (
+            {[["adventure", "⚔️ Adventure"], ["calm", "🌱 Calm"]].map(([v, label]) => (
               <button key={v} type="button" role="radio" aria-checked={look.style === v} aria-pressed={look.style === v}
                 onClick={() => look.setStyle(v)}>{label}</button>
             ))}
@@ -84,13 +84,13 @@ export default function AuthScreen() {
         </div>
         <ul className="auth-facts">
           {FACTS[look.style].map((f) => (
-            <li key={f.title}><Icon name={f.icon} /><div><b>{f.title}</b><span>{f.body}</span></div></li>
+            <li key={f.title}><span className="emoji" aria-hidden="true">{f.emoji}</span><div><b>{f.title}</b><span>{f.body}</span></div></li>
           ))}
         </ul>
       </section>
 
       <section className="auth-form-wrap">
-        <form className="panel auth-form" onSubmit={submit} noValidate>
+        <form className="card auth-form" onSubmit={submit} noValidate>
           <div className="seg" role="tablist" aria-label="Sign in or create an account">
             <button type="button" role="tab" aria-selected={!isRegister} onClick={() => { setMode("login"); setError(""); }}>Sign in</button>
             <button type="button" role="tab" aria-selected={isRegister} onClick={() => { setMode("register"); setError(""); }}>Create account</button>
@@ -129,9 +129,9 @@ export default function AuthScreen() {
           </div>
 
           <button type="submit" className="btn block" disabled={busy || !form.email || !form.password || (isRegister && !form.name.trim())}>
-            {busy ? "One moment…" : isRegister ? "Create account" : "Sign in"}
+            {busy ? "One moment…" : isRegister ? "🚀 Create account" : "Sign in"}
           </button>
-          <p className="auth-privacy"><Icon name="lock" className="sm" />Your journal stays private. Admins can see progress numbers, never what you write.</p>
+          <p className="auth-privacy"><span className="emoji" aria-hidden="true">🔒</span>Your journal stays private. Admins can see progress numbers, never what you write.</p>
         </form>
       </section>
     </div>

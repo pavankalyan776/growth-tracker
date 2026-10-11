@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Icon from "./icons";
+import { ErrorNote } from "./ui";
 import { api } from "../api";
 import { useGame } from "../game";
 import { DOWS_SHORT, MONTHS, formatFull, getToday, parseKey, sameDay } from "../dateUtils";
@@ -41,15 +42,15 @@ export default function CalendarView({ route }) {
 
   return (
     <div className="cal-layout">
-      <section className="panel" aria-label="Calendar">
-        <div className="panel-head">
-          <h2 className="panel-title">{MONTHS[ym.m]} {ym.y}</h2>
-          <div className="row">
+      <section className="card" aria-label="Calendar">
+        <div className="card-head">
+          <h2 className="card-title">🗓️ {MONTHS[ym.m]} {ym.y}</h2>
+          <div className="row" style={{ marginLeft: "auto" }}>
             <button type="button" className="icon-btn" disabled={prevDisabled} onClick={() => step(-1)} aria-label="Previous month"><Icon name="chevronLeft" /></button>
             <button type="button" className="icon-btn" disabled={nextDisabled} onClick={() => step(1)} aria-label="Next month"><Icon name="chevronRight" /></button>
           </div>
         </div>
-        {error && <div className="alert error" role="alert"><Icon name="alert" />{error}</div>}
+        <ErrorNote error={error} />
         {!cal && !error && <div className="skel" style={{ height: 420 }} />}
         {cal && (
           <div className="cal-grid" role="grid" aria-label={cal.label}>
@@ -64,8 +65,8 @@ export default function CalendarView({ route }) {
                   style={{ "--p": d.pct || 0 }}
                   aria-label={`${d.date}${d.pct !== undefined ? `, ${d.pct}% cleared` : ""}${d.shielded ? ", shielded" : ""}${d.has_journal ? ", has a log entry" : ""}`}
                   onClick={() => route.navigate(`today/${d.date}`)}>
-                  <span className="ring"><b className="num">{dt.getDate()}</b></span>
-                  {d.shielded && <Icon name="shield" className="sm cal-badge" />}
+                  <span className="ring-c"><b className="num">{dt.getDate()}</b></span>
+                  {d.shielded && <span className="emoji cal-badge" aria-hidden="true">🛡️</span>}
                   {d.has_journal && <i className="cal-dot" />}
                 </button>
               );
@@ -76,22 +77,22 @@ export default function CalendarView({ route }) {
           <li><i className="lg-ring perfect" />Perfect</li>
           <li><i className="lg-ring part" />Partly cleared</li>
           <li><i className="lg-ring miss" />Missed</li>
-          <li><Icon name="shield" className="sm" />Shielded</li>
-          <li><i className="cal-dot static" />Log entry</li>
+          <li><span className="emoji" aria-hidden="true">🛡️</span>Shielded</li>
+          <li><span className="emoji" aria-hidden="true">📔</span>Log entry</li>
         </ul>
       </section>
 
       <aside className="stack">
-        <section className="panel sm">
-          <div className="small muted">Month average</div>
+        <section className="card sm">
+          <div className="small muted">📊 Month average</div>
           <div className="num big-num">{cal && cal.tracked ? `${cal.avg}%` : "None yet"}</div>
-          <p className="small muted">Finish a month at 80% or better to earn the +100 coin monthly achievement. Tap any day to open it and fix what you missed.</p>
+          <p className="small muted">Finish a month at 80% or better to earn the 🪙 +100 monthly achievement. Tap any day to open it and fix what you missed.</p>
         </section>
         {o && (
-          <section className="panel sm">
-            <div className="small muted">Plan window</div>
-            <div className="display" style={{ fontSize: "1.5rem" }}>{formatFull(parseKey(o.plan.start))} to {formatFull(parseKey(o.plan.end))}</div>
-            <p className="small muted">Day {Math.min(o.plan.day, o.plan.days)} of {o.plan.days}. {o.plan.days_left} days left.</p>
+          <section className="card sm">
+            <div className="small muted">🧭 Plan window</div>
+            <div className="display" style={{ fontSize: "1.25rem" }}>{formatFull(parseKey(o.plan.start))} to {formatFull(parseKey(o.plan.end))}</div>
+            <p className="small muted">📍 Day {Math.min(o.plan.day, o.plan.days)} of {o.plan.days}. {o.plan.days_left} days left.</p>
           </section>
         )}
       </aside>

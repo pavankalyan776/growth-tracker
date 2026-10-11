@@ -20,6 +20,25 @@ def _clean_name(value: str) -> str:
     return value
 
 
+def _clean_text(value: str, label: str, min_len: int, max_len: int) -> str:
+    value = re.sub(r"\s+", " ", value or "").strip()
+    if len(value) < min_len or len(value) > max_len:
+        raise ValueError("{} must be {} to {} characters.".format(label, min_len, max_len))
+    if re.search(r"[<>]", value):
+        raise ValueError("{} can't contain < or >.".format(label))
+    return value
+
+
+def _clean_emoji(value: Optional[str], default: str) -> str:
+    """One short emoji (or a couple). Anything with letters, digits or markup is rejected."""
+    value = (value or "").strip()
+    if not value:
+        return default
+    if len(value) > 8 or re.search(r"[A-Za-z0-9<>&\"'`]", value):
+        raise ValueError("Pick a single emoji.")
+    return value
+
+
 def _check_password(value: str) -> str:
     if len(value) < 8:
         raise ValueError("Password must be at least 8 characters.")
@@ -94,7 +113,7 @@ class DeleteAccountIn(BaseModel):
 
 
 class OnboardingIn(BaseModel):
-    template: str = Field(pattern=r"^(wellbeing|student|exam_ai|focus|blank)$")
+    template: str = Field(pattern=r"^[a-z0-9_]{1,30}$")
     plan_start: date_type
     plan_end: date_type
 
@@ -174,6 +193,35 @@ class MilestoneOut(BaseModel):
     achieved: bool
     achieved_at: Optional[datetime] = None
     calm: Optional[dict] = None          # the same milestone in plain words
+    emoji: str = "🏆"
+
+
+class ChallengeIn(BaseModel):
+    """A challenge a member builds from a form: a title, an emoji, how many check-ins, and how long they have."""
+    title: str
+    emoji: Optional[str] = None
+    target: int = Field(ge=3, le=90)
+    days: int = Field(ge=3, le=90)                  # length of the window, counted from start_date
+    start_date: Optional[date_type] = None          # defaults to today
+
+    @field_validator("title")
+    @classmethod
+    def _title(cls, v: str) -> str:
+        return _clean_text(v, "Title", 2, 60)
+
+    @field_validator("emoji")
+    @classmethod
+    def _emoji(cls, v: Optional[str]) -> str:
+        return _clean_emoji(v, "🎯")
+
+
+class ChallengeCheckinIn(BaseModel):
+    date: date_type
+    done: bool
+
+
+class ChallengePatch(BaseModel):
+    archived: Optional[bool] = None
 
 
 # ---------------------------------------------------------------------------
@@ -188,3 +236,157 @@ class AdminUserPatch(BaseModel):
 class OnboardingPlanIn(BaseModel):
     plan_start: date_type
     plan_end: date_type
+
+
+class DareIn(BaseModel):
+    label: str
+    hint: str = ""
+    category: str = Field(default="mind", pattern=r"^(body|mind|kind|home)$")
+    emoji: Optional[str] = None
+    active: bool = True
+
+    @field_validator("label")
+    @classmethod
+    def _label(cls, v: str) -> str:
+        return _clean_text(v, "Dare", 5, 120)
+
+    @field_validator("hint")
+    @classmethod
+    def _hint(cls, v: str) -> str:
+        return _clean_text(v, "Hint", 0, 160) if v else ""
+
+    @field_validator("emoji")
+    @classmethod
+    def _emoji(cls, v: Optional[str]) -> str:
+        return _clean_emoji(v, "✨")
+
+
+class DarePatch(BaseModel):
+    label: Optional[str] = None
+    hint: Optional[str] = None
+    category: Optional[str] = Field(default=None, pattern=r"^(body|mind|kind|home)$")
+    emoji: Optional[str] = None
+    active: Optional[bool] = None
+
+    @field_validator("label")
+    @classmethod
+    def _label(cls, v: Optional[str]) -> Optional[str]:
+        return None if v is None else _clean_text(v, "Dare", 5, 120)
+
+    @field_validator("hint")
+    @classmethod
+    def _hint(cls, v: Optional[str]) -> Optional[str]:
+        return None if v is None else (_clean_text(v, "Hint", 0, 160) if v else "")
+
+    @field_validator("emoji")
+    @classmethod
+    def _emoji(cls, v: Optional[str]) -> Optional[str]:
+        return None if v is None else _clean_emoji(v, "✨")
+
+
+class AnnouncementIn(BaseModel):
+    title: str
+    body: str = ""
+    emoji: Optional[str] = None
+    tone: str = Field(default="info", pattern=r"^(info|tip|party)$")
+    active: bool = True
+    expires_on: Optional[date_type] = None
+
+    @field_validator("title")
+    @classmethod
+    def _title(cls, v: str) -> str:
+        return _clean_text(v, "Title", 2, 80)
+
+    @field_validator("body")
+    @classmethod
+    def _body(cls, v: str) -> str:
+        return _clean_text(v, "Message", 0, 300) if v else ""
+
+    @field_validator("emoji")
+    @classmethod
+    def _emoji(cls, v: Optional[str]) -> str:
+        return _clean_emoji(v, "📣")
+
+
+class AnnouncementPatch(BaseModel):
+    title: Optional[str] = None
+    body: Optional[str] = None
+    emoji: Optional[str] = None
+    tone: Optional[str] = Field(default=None, pattern=r"^(info|tip|party)$")
+    active: Optional[bool] = None
+    expires_on: Optional[date_type] = None
+    clear_expiry: bool = False
+
+    @field_validator("title")
+    @classmethod
+    def _title(cls, v: Optional[str]) -> Optional[str]:
+        return None if v is None else _clean_text(v, "Title", 2, 80)
+
+    @field_validator("body")
+    @classmethod
+    def _body(cls, v: Optional[str]) -> Optional[str]:
+        return None if v is None else (_clean_text(v, "Message", 0, 300) if v else "")
+
+    @field_validator("emoji")
+    @classmethod
+    def _emoji(cls, v: Optional[str]) -> Optional[str]:
+        return None if v is None else _clean_emoji(v, "📣")
+
+
+class TemplateQuestIn(BaseModel):
+    day_type: str = Field(pattern=DAY_TYPE_PATTERN)
+    label: str
+    time_label: str = Field(default="All day", max_length=50)
+    stat: str = Field(pattern=STAT_PATTERN)
+
+    @field_validator("label")
+    @classmethod
+    def _label(cls, v: str) -> str:
+        return _clean_text(v, "Task", 1, 200)
+
+
+class TemplateIn(BaseModel):
+    key: str = Field(pattern=r"^[a-z][a-z0-9_]{1,29}$")
+    label: str
+    desc: str = ""
+    emoji: Optional[str] = None
+    active: bool = True
+    quests: List[TemplateQuestIn] = Field(default_factory=list, max_length=60)
+
+    @field_validator("label")
+    @classmethod
+    def _label(cls, v: str) -> str:
+        return _clean_text(v, "Name", 2, 60)
+
+    @field_validator("desc")
+    @classmethod
+    def _desc(cls, v: str) -> str:
+        return _clean_text(v, "Description", 0, 200) if v else ""
+
+    @field_validator("emoji")
+    @classmethod
+    def _emoji(cls, v: Optional[str]) -> str:
+        return _clean_emoji(v, "🌱")
+
+
+class TemplatePatch(BaseModel):
+    label: Optional[str] = None
+    desc: Optional[str] = None
+    emoji: Optional[str] = None
+    active: Optional[bool] = None
+    quests: Optional[List[TemplateQuestIn]] = Field(default=None, max_length=60)
+
+    @field_validator("label")
+    @classmethod
+    def _label(cls, v: Optional[str]) -> Optional[str]:
+        return None if v is None else _clean_text(v, "Name", 2, 60)
+
+    @field_validator("desc")
+    @classmethod
+    def _desc(cls, v: Optional[str]) -> Optional[str]:
+        return None if v is None else (_clean_text(v, "Description", 0, 200) if v else "")
+
+    @field_validator("emoji")
+    @classmethod
+    def _emoji(cls, v: Optional[str]) -> Optional[str]:
+        return None if v is None else _clean_emoji(v, "🌱")

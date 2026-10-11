@@ -1,4 +1,4 @@
-# Frontend: React + Vite (v4)
+# Frontend: React + Vite (v5)
 
 ```bash
 npm install
@@ -18,21 +18,23 @@ VITE_API_URL=https://your-backend.up.railway.app
 
 ```
 src/
-  App.jsx            auth gate, onboarding gate, shell, routes
-  auth.jsx · game.jsx  session state, overview/toasts/celebration
-  api.js             every backend call (bearer token, ?today=)
-  router.js          tiny hash router (#/today/2026-10-03, #/admin/users)
-  look.jsx           Adventure/Calm word lists, text size, useLook()
-  theme.js           brightness (Day/Night/System), style, size, shop colour themes
-  styles/            tokens · base · shell · views · viz · features · calm
-  components/        Today, Challenges (dare + boss), Hall, Calendar, Progress, Quests, Shop, Achievements,
-                     Profile, Appearance, Avatar, Onboarding, AuthScreen
-  components/admin/  Overview, Members table + drawer, Audit
+  App.jsx            auth gate, onboarding gate, member app vs admin app, lazy routes
+  auth.jsx · game.jsx  session state; overview, toasts and celebrations (write responses are applied, not refetched)
+  api.js             every backend call (bearer token, ?today=), read cache that any write clears, idle prefetch
+  router.js          tiny hash router (#/today/2026-10-03, #/admin/studio/dares)
+  look.jsx           Adventure/Calm word lists (with emoji), text size, useLook()
+  theme.js           brightness (Day/Night/System), words, size, shop colour gradients
+  styles/            tokens (Sunset Day/Night) · base · app (member pages) · viz (charts) · admin (separate console)
+  components/        AppShell (grouped menu), Today, ChallengesView + Challenges (dare, boss, builder), Hall, Calendar,
+                     Progress, Quests, Shop, Achievements, Profile, Appearance, Onboarding, AuthScreen, ui (shared bits)
+  components/admin/  AdminApp (own shell), Dashboard, Members, ContentStudio, Audit
 ```
 
-Fonts are bundled (Big Shoulders Display, Instrument Sans and Lexend), so nothing loads from Google at runtime.
-Charts are plain SVG. Chart colours are checked for colour-blind separation in both modes, and every chart has
-a readout and a table view.
+Fonts are bundled (Fredoka for headings, Nunito for text), so nothing loads from Google at runtime.
+Charts are plain SVG with a readout and a table view. Only Today ships in the first download; every other page is a
+separate chunk that the browser fetches while idle, so moving around never waits.
 
-Look settings (style, brightness, text size) are stored in the browser (`gt-style`, `gt-mode`, `gt-size`) and applied
+The admin app ignores shop colours and uses its own indigo palette (`styles/admin.css`, scoped under `.admin-app`).
+
+Look settings (words, brightness, text size) are stored in the browser (`gt-style`, `gt-mode`, `gt-size`) and applied
 before first paint from `index.html`, so there is no flash. Change the default in `src/theme.js` (`DEFAULT_STYLE`).

@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from .. import config, crud, models, schemas, security
+from .. import cache, config, crud, models, schemas, security
 from ..database import get_db
 from ..deps import get_current_user, resolve_today
 from ..models import utcnow
@@ -144,6 +144,7 @@ def update_profile(payload: schemas.ProfileUpdate, user: models.User = Depends(g
     if payload.public_board is not None:
         user.public_board = payload.public_board
     db.commit()
+    cache.clear()          # the Hall and the admin lists show names and avatars
     return user
 
 
@@ -172,9 +173,13 @@ def complete_onboarding(payload: schemas.OnboardingIn, today: Optional[date] = N
     if user.onboarded:
         raise HTTPException(status_code=409, detail="You've already set up your plan.")
     _validate_plan(payload.plan_start, payload.plan_end, resolve_today(today))
-    crud.seed_quests(db, user.id, payload.template)
+    template = crud.get_template(db, payload.template)
+    if template is None:
+        raise HTTPException(status_code=400, detail="That starting plan isn't available. Pick another one.")
+    crud.seed_quests(db, user.id, template)
     user.plan_start, user.plan_end, user.onboarded = payload.plan_start, payload.plan_end, True
     db.commit()
+    cache.clear()
     crud.audit(db, "user.onboarded", actor=user, target=user, detail="template=" + payload.template)
     return user
 
@@ -191,7 +196,11 @@ def update_plan(payload: schemas.OnboardingPlanIn, today: Optional[date] = None,
 
 
 @router.get("/templates")
-def list_templates():
-    from ..seed_data import TEMPLATES
-    return [{"key": k, "label": v["label"], "desc": v["desc"], "quests": len(v["quests"])}
-            for k, v in TEMPLATES.items()]
+def list_templates(db: Session = Depends(get_db)):
+    out = []
+    for t in crud.list_templates(db):
+        quests = crud.template_quests(t)
+        weekday = [q["label"] for q in quests if q["day_type"] == "weekday"]
+        out.append({"key": t.key, "label": t.label, "desc": t.desc, "emoji": t.emoji, "quests": len(quests),
+                    "preview": weekday[:4]})
+    return out

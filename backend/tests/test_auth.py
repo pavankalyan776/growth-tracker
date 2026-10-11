@@ -210,7 +210,7 @@ def test_onboarding_validates_the_plan(signup):
     assert go("2026-10-10", "2026-10-01").status_code == 400     # ends before it starts
     assert go("2026-10-01", "2026-10-03").status_code == 400     # too short
     assert go("2026-01-01", "2027-12-31").status_code == 400     # too long
-    assert go(START, END, template="nope").status_code == 422
+    assert go(START, END, template="nope").status_code == 400
     assert go(START, END).status_code == 200
     assert go(START, END).status_code == 409                     # only once
     assert len(api.get("/api/quests").json()) == 21

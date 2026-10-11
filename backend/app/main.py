@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 
 from .bootstrap import init_database
 from .database import SessionLocal
@@ -16,12 +17,13 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Growth Tracker API", version="4.0.0", lifespan=lifespan)
+app = FastAPI(title="Growth Tracker API", version="5.0.0", lifespan=lifespan)
 
 # Set CORS_ORIGINS on the host to your Vercel URL, e.g. https://growth-tracker.vercel.app
 # (comma-separated for several). Defaults to "*" so local development just works.
 # Sessions use an Authorization header (not cookies), so credentials stay off.
 _origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",") if o.strip()]
+app.add_middleware(GZipMiddleware, minimum_size=600)     # JSON compresses ~5x: less to download on slow phones
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_origins,
@@ -49,4 +51,4 @@ app.include_router(admin.router)
 
 @app.get("/")
 def root():
-    return {"status": "ok", "service": "growth-tracker-api", "version": 4}
+    return {"status": "ok", "service": "growth-tracker-api", "version": 5}

@@ -1,116 +1,121 @@
 /* ==========================================================================
-   Design tokens, v4 "Daybreak"
-   Light is the default and the dark mode ("Night") is a warm charcoal, never navy.
+   Design tokens, v5 "Sunset"
+   One warm gradient (accent -> accent-2) carries the brand. Day is a soft peach paper, Night is plum.
    Colour has a job:
-     accent (your chosen colour) = progress, primary actions
-     sky   = "now" / live            gold  = coins            coral = challenges (dare, boss)
-     red   = missed days, destructive actions
-   Names kept from v3 so every component keeps working:
-     --void canvas, --obsidian panels, --basalt sunken surfaces
+     accent gradient = progress and primary actions      ok    = done
+     info (violet)   = "now" and live                    gold  = coins
+     pink            = challenges (dares, bosses)        danger = missed, destructive
+   The accent pair is replaced at runtime by the equipped shop colour (see theme.js).
    ========================================================================== */
 
 :root {
-  /* type */
-  --font-display: "Big Shoulders Display Variable", "Arial Narrow", Impact, sans-serif;
-  --font-body: "Instrument Sans Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Fredoka Variable", "Nunito Variable", "Segoe UI Rounded", system-ui, sans-serif;
+  --font-body: "Nunito Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
 
-  /* scale: body is 16px, nothing readable is under 14px. The whole scale grows with the Text size setting. */
-  --step--1: 0.875rem;    /* 14 */
-  --step-0: 1rem;         /* 16 */
-  --step-1: 1.1875rem;    /* 19 */
-  --step-2: 1.625rem;     /* 26 */
-  --step-3: 2.25rem;      /* 36 */
-  --step-4: 3.5rem;       /* 56 */
+  /* type scale: body 16px, nothing readable under 14px. Everything grows with the Text size setting. */
+  --step--1: 0.875rem;
+  --step-0: 1rem;
+  --step-1: 1.1875rem;
+  --step-2: 1.5rem;
+  --step-3: 2rem;
+  --step-4: 2.75rem;
 
-  /* space (4px base) */
-  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px; --s8: 72px;
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px;
 
-  --cut: 14px;            /* Adventure: the cut corner on big panels */
-  --cut-sm: 8px;
-  --radius: 12px;
+  --r-sm: 10px;
+  --r: 14px;
+  --r-lg: 22px;
+  --r-xl: 28px;
 
-  --rail-w: 92px;
-  --topbar-h: 68px;
-  --content-max: 1280px;
+  --side-w: 256px;
+  --content-max: 1240px;
+  --tabbar-h: 68px;
 
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  /* accent: overwritten at runtime from the equipped colour (see theme.js) */
-  --accent: #0B7A64;
-  --accent-text: #0B7A64;
+  /* accent pair: Sunset by default, overwritten from the equipped shop colour */
+  --accent: #CD4107;
+  --accent-2: #C0246F;
+  --accent-text: #B93A08;
   --on-accent: #FFFFFF;
-  --accent-glow: rgba(44, 201, 165, 0.28);
+  --accent-glow: rgba(205, 65, 7, 0.28);
+  --grad: linear-gradient(135deg, var(--accent), var(--accent-2));
 }
 
-/* ---------- Daylight (light, the default) ---------- */
+/* ---------- Day ---------- */
 :root, :root[data-mode="light"] {
   color-scheme: light;
-  --void: #F5F6F2;
-  --obsidian: #FFFFFF;
-  --basalt: #ECEEE8;
-  --line: rgba(28, 36, 32, 0.12);
-  --line-strong: rgba(28, 36, 32, 0.28);
-  --text: #1C2420;
-  --text-2: #4A554F;
-  --text-3: #5E6A63;
-  --cyan: #0B6EA8;
-  --gold: #8A5300;            /* gold as TEXT */
-  --gold-fill: #F5A300;       /* gold as a fill or icon */
-  --coral: #BD3A0C;
-  --red: #C01E45;
-  --red-text: #B01B3F;
-  --red-tint: rgba(192, 30, 69, 0.08);
-  --gold-tint: rgba(245, 163, 0, 0.16);
-  --cyan-tint: rgba(11, 110, 168, 0.09);
-  --coral-tint: rgba(189, 58, 12, 0.08);
-  --shadow: 0 14px 40px rgba(28, 36, 32, 0.14);
-  --card-shadow: 0 1px 2px rgba(28, 36, 32, 0.06), 0 6px 18px rgba(28, 36, 32, 0.06);
-  --tone: rgba(28, 36, 32, 0.07);       /* screentone dots */
+  --page: #FFF6F1;
+  --card: #FFFFFF;
+  --sunken: #FDEBE3;
+  --line: rgba(90, 40, 60, 0.12);
+  --line-strong: rgba(90, 40, 60, 0.30);
+  --text: #2B1B2E;
+  --text-2: #5A4560;
+  --text-3: #75607C;
 
-  /* chart palette: five stat hues in fixed order. Heatmap ramp is built from the accent. */
-  --cat-1: #2a78d6; --cat-2: #eb6834; --cat-3: #1baf7a; --cat-4: #eda100; --cat-5: #e87ba4;
-  --series-1: var(--accent);
-  --viz-grid: rgba(28, 36, 32, 0.10); --viz-axis: rgba(28, 36, 32, 0.30); --viz-muted: #5E6A63;
-  --hm-0: #E3E6DF;
-  --hm-1: color-mix(in srgb, var(--accent) 22%, var(--obsidian));
-  --hm-2: color-mix(in srgb, var(--accent) 45%, var(--obsidian));
-  --hm-3: color-mix(in srgb, var(--accent) 72%, var(--obsidian));
-  --hm-4: var(--accent);
-  --scrim: rgba(28, 36, 32, 0.45);
+  --ok: #08724F;
+  --info: #5340D6;
+  --gold: #835000;
+  --gold-fill: #FFB020;
+  --pink: #B91F68;
+  --danger: #B3261E;
+
+  --cat-1: #D9480F;   /* strength   */
+  --cat-2: #6741D9;   /* intellect  */
+  --cat-3: #0C8599;   /* perception */
+  --cat-4: #2F9E44;   /* vitality   */
+  --cat-5: #C2255C;   /* agility    */
+
+  --shadow-sm: 0 1px 2px rgba(120, 50, 50, 0.06), 0 2px 8px rgba(160, 70, 50, 0.06);
+  --shadow-md: 0 2px 4px rgba(120, 50, 50, 0.05), 0 12px 32px rgba(160, 70, 50, 0.12);
+  --scrim: rgba(43, 27, 46, 0.45);
 }
 
-/* ---------- Night (dark: warm charcoal) ---------- */
+/* ---------- Night (plum) ---------- */
 :root[data-mode="dark"] {
   color-scheme: dark;
-  --void: #161513;
-  --obsidian: #201E1B;
-  --basalt: #2B2825;
-  --line: rgba(245, 242, 236, 0.12);
-  --line-strong: rgba(245, 242, 236, 0.30);
-  --text: #F5F2EC;
-  --text-2: #C2BBB0;
-  --text-3: #A39C91;
-  --cyan: #5CC2F2;
-  --gold: #FFC247;
-  --gold-fill: #FFC247;
-  --coral: #FF8566;
-  --red: #FF4F6B;
-  --red-text: #FF7A90;
-  --red-tint: rgba(255, 79, 107, 0.13);
-  --gold-tint: rgba(255, 194, 71, 0.13);
-  --cyan-tint: rgba(92, 194, 242, 0.12);
-  --coral-tint: rgba(255, 133, 102, 0.13);
-  --shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
-  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
-  --tone: rgba(245, 242, 236, 0.07);
+  --page: #170F1E;
+  --card: #231729;
+  --sunken: #2F2038;
+  --line: rgba(255, 220, 240, 0.12);
+  --line-strong: rgba(255, 220, 240, 0.32);
+  --text: #FFF1F7;
+  --text-2: #D8C3D4;
+  --text-3: #B9A3B6;
 
-  --cat-1: #4C94F0; --cat-2: #F07A45; --cat-3: #22C58B; --cat-4: #F2B01E; --cat-5: #F08AB4;
-  --viz-grid: rgba(245, 242, 236, 0.12); --viz-axis: rgba(245, 242, 236, 0.30); --viz-muted: #A39C91;
-  --hm-0: #2B2825;
-  --scrim: rgba(8, 7, 6, 0.66);
+  --ok: #46E0AE;
+  --info: #B3A8FF;
+  --gold: #FFC857;
+  --gold-fill: #FFC857;
+  --pink: #FF8EBB;
+  --danger: #FF8A80;
+
+  --cat-1: #FF8A5C;
+  --cat-2: #B3A8FF;
+  --cat-3: #3BC9DB;
+  --cat-4: #51CF66;
+  --cat-5: #FF6B9D;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.42);
+  --scrim: rgba(8, 4, 12, 0.66);
 }
 
-/* ---------- Text size (Profile > Appearance). Everything is rem-based, so this scales the whole app. ---------- */
+/* ---------- Text size ---------- */
 :root[data-size="large"] { font-size: 112.5%; }
 :root[data-size="xl"] { font-size: 125%; }
+
+/* ---------- Chart ramps, derived from the accent so every colour theme works ---------- */
+:root {
+  --heat-0: color-mix(in srgb, var(--danger) 20%, var(--card));
+  --heat-1: color-mix(in srgb, var(--accent) 42%, var(--card));
+  --heat-2: color-mix(in srgb, var(--accent) 68%, var(--card));
+  --heat-3: var(--accent);
+  --heat-4: var(--accent-2);
+  --series-1: var(--accent);
+  --viz-grid: var(--line);
+  --viz-axis: var(--line-strong);
+  --viz-text: var(--text-3);
+}

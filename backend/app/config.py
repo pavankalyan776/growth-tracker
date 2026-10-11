@@ -55,3 +55,8 @@ def trust_client_date() -> bool:
 
 def rate_limit_enabled() -> bool:
     return _bool("RATE_LIMIT", True)
+
+
+def cache_seconds() -> int:
+    """How long the Hall and the admin rollups may be reused. 0 = off."""
+    return max(0, _int("CACHE_SECONDS", 20))

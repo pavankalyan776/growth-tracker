@@ -31,6 +31,7 @@ def guard_legacy_schema() -> None:
 ADDED_COLUMNS = [
     ("users", "avatar", "VARCHAR(20) NOT NULL DEFAULT 'spark'"),
     ("users", "public_board", "BOOLEAN NOT NULL DEFAULT 0"),
+    ("dares_done", "dare_key", "VARCHAR(30)"),
 ]
 
 
@@ -47,17 +48,31 @@ def ensure_columns() -> None:
 
 
 def migrate_theme_keys(db: Session) -> None:
-    """v3 -> v4: shop colours were renamed. Move equipped themes and purchases to the new keys."""
+    """Shop colours were renamed over time. Move equipped themes and purchases to the current keys."""
     from .shop import LEGACY_KEYS
     for old, new in LEGACY_KEYS.items():
         db.query(models.User).filter(models.User.theme_key == old).update({"theme_key": new})
         for row in db.query(models.Purchase).filter(models.Purchase.item_key == old).all():
             already = db.query(models.Purchase).filter(models.Purchase.user_id == row.user_id,
                                                        models.Purchase.item_key == new).first()
-            if already or new == "theme_sprout":      # Sprout is free for everyone: no purchase row needed
+            if already or new == "theme_sunset":      # Sunset is free for everyone: no purchase row needed
                 db.delete(row)
             else:
                 row.item_key = new
+    db.commit()
+
+
+def seed_templates(db: Session) -> None:
+    """Make sure every built-in starting plan exists as a row. Never overwrites an admin's edits."""
+    import json
+    from .seed_data import TEMPLATES
+    have = {t.key for t in db.query(models.PlanTemplate).all()}
+    for i, (key, t) in enumerate(TEMPLATES.items()):
+        if key in have:
+            continue
+        quests = [{k: q[k] for k in ("day_type", "label", "time_label", "stat")} for q in t["quests"]]
+        db.add(models.PlanTemplate(key=key, label=t["label"], desc=t["desc"], emoji=t.get("emoji", "🌱"),
+                                   builtin=True, sort_order=i, quests_json=json.dumps(quests)))
     db.commit()
 
 
@@ -92,6 +107,7 @@ def init_database(session_factory) -> None:
         security.reset_secret_cache()
         security.get_jwt_secret(db)      # create the signing key now, not on the first login
         migrate_theme_keys(db)
+        seed_templates(db)
         ensure_admin(db)
     finally:
         db.close()

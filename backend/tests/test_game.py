@@ -198,7 +198,7 @@ def test_shop_buy_equip_rules(client):
     shop = client.get("/api/shop").json()
     assert shop["coins"] == 0
     keys = {i["key"]: i for i in shop["items"]}
-    assert keys["title_rookie"]["owned"] and keys["theme_sprout"]["owned"]
+    assert keys["title_rookie"]["owned"] and keys["theme_sunset"]["owned"]
     assert client.post("/api/shop/buy", json={"key": "title_riser"}).status_code == 400
     assert client.post("/api/shop/equip", json={"key": "title_riser"}).status_code == 400
     for d in ("2026-09-16", "2026-09-17", "2026-09-18", "2026-09-19", "2026-09-20"):
@@ -209,7 +209,7 @@ def test_shop_buy_equip_rules(client):
     assert client.post("/api/shop/buy", params={"today": "2026-09-20"},
                        json={"key": "theme_ocean"}).status_code == 400   # already owned
     client.post("/api/shop/equip", json={"key": "theme_ocean"})
-    assert overview(client, "2026-09-20")["theme"]["fill"] == "#5AA9FF"
+    assert overview(client, "2026-09-20")["theme"]["fill"] == "#5CB4FF"
 
 
 def test_export_contains_everything_and_only_your_data(client):

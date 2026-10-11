@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import Icon from "../icons";
+import { Empty, ErrorNote } from "../ui";
 import { auditLabel, auditTone } from "./auditLabels";
 import { api } from "../../api";
 import { timeAgo } from "../../dateUtils";
 
-const FILTERS = [["", "Everything"], ["admin.", "Admin actions"], ["auth.", "Sign-ins"], ["user.", "Account changes"]];
+const FILTERS = [["", "Everything"], ["admin.", "🛡️ Admin actions"], ["content.", "🎛️ Content edits"], ["auth.", "🔑 Sign-ins"], ["user.", "👤 Account changes"]];
 
 export default function AdminAudit() {
   const [action, setAction] = useState("");
@@ -20,7 +21,7 @@ export default function AdminAudit() {
   const pages = data ? Math.max(1, Math.ceil(data.total / data.page_size)) : 1;
   return (
     <div className="stack">
-      <section className="panel sm row wrap">
+      <section className="card sm row wrap">
         <div className="seg" role="tablist" aria-label="Filter the audit log">
           {FILTERS.map(([v, label]) => (
             <button key={label} type="button" role="tab" aria-selected={action === v} onClick={() => { setAction(v); setPage(1); }}>{label}</button>
@@ -28,14 +29,14 @@ export default function AdminAudit() {
         </div>
         <p className="small muted grow">Newest first. Entries are append-only and survive account deletion.</p>
       </section>
-      {error && <div className="alert error" role="alert"><Icon name="alert" />{error}</div>}
-      <section className="panel table-panel" aria-label="Audit log">
+      <ErrorNote error={error} />
+      <section className="card" style={{ padding: 0, overflow: "hidden" }} aria-label="Audit log">
         <div className="table-scroll">
           <table className="data-table">
             <thead><tr><th scope="col">When</th><th scope="col">Event</th><th scope="col">Who did it</th><th scope="col">Who it was about</th><th scope="col">Detail</th></tr></thead>
             <tbody>
               {!data && Array.from({ length: 6 }, (_, i) => <tr key={i}><td colSpan={5}><div className="skel" style={{ height: 36 }} /></td></tr>)}
-              {data && data.items.length === 0 && <tr><td colSpan={5}><div className="empty"><div className="display">Nothing logged yet</div></div></td></tr>}
+              {data && data.items.length === 0 && <tr><td colSpan={5}><Empty emoji="🧾" title="Nothing logged yet" /></td></tr>}
               {data && data.items.map((a) => (
                 <tr key={a.id}>
                   <td className="faint" title={new Date(a.at).toLocaleString()}>{timeAgo(a.at)}</td>

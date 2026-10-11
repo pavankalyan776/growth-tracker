@@ -1,7 +1,7 @@
 /*
  * Look and feel, kept on <html> as attributes and CSS variables:
  *   data-mode  light | dark        (Profile > Appearance; "system" follows the device)
- *   data-style adventure | calm    (game words and cut corners, or plain words and rounded corners)
+ *   data-style adventure | calm    (game words, or plain words; the shapes are the same)
  *   data-size  standard | large | xl   (text size, for easier reading)
  *   --accent*  the equipped shop colour
  * Everything is stored in localStorage and applied before first paint (see index.html).
@@ -31,7 +31,10 @@ export function resolveMode(pref) {
 
 export function applyMode(pref) {
   write(MODE_KEY, pref);
-  document.documentElement.setAttribute("data-mode", resolveMode(pref));
+  const mode = resolveMode(pref);
+  document.documentElement.setAttribute("data-mode", mode);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", mode === "dark" ? "#170F1E" : "#FFF6F1");
   const saved = read(THEME_KEY);
   if (saved) {
     try { applyAccent(JSON.parse(saved), false); } catch { /* ignore a corrupt value */ }
@@ -60,20 +63,29 @@ export function applySize(size) {
   document.documentElement.setAttribute("data-size", size);
 }
 
-/* ---------- accent colour ---------- */
+/* ---------- accent colour (a gradient pair from the equipped shop colour) ---------- */
+const hexToRgb = (hex) => {
+  const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex || "");
+  return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : [205, 65, 7];
+};
+
 export function applyAccent(theme, persist = true) {
   if (!theme) return;
   const light = document.documentElement.getAttribute("data-mode") !== "dark";
   const root = document.documentElement.style;
-  root.setProperty("--accent", light ? theme.light : theme.fill);
-  root.setProperty("--accent-text", light ? theme.light_text || theme.light : theme.text);
+  const a = light ? theme.light : theme.fill;
+  const b = light ? theme.light2 || theme.light : theme.fill2 || theme.fill;
+  const [r, g, bl] = hexToRgb(a);
+  root.setProperty("--accent", a);
+  root.setProperty("--accent-2", b);
+  root.setProperty("--accent-text", light ? theme.light_text || a : theme.text);
   root.setProperty("--on-accent", light ? theme.on_light || "#FFFFFF" : theme.on_fill);
-  root.setProperty("--accent-glow", theme.glow);
+  root.setProperty("--accent-glow", `rgba(${r}, ${g}, ${bl}, ${light ? 0.28 : 0.3})`);
   if (persist) write(THEME_KEY, JSON.stringify(theme));
 }
 
 export function clearAccent() {
   try { localStorage.removeItem(THEME_KEY); } catch { /* ignore */ }
-  ["--accent", "--accent-text", "--on-accent", "--accent-glow"].forEach((p) =>
+  ["--accent", "--accent-2", "--accent-text", "--on-accent", "--accent-glow"].forEach((p) =>
     document.documentElement.style.removeProperty(p));
 }

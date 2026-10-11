@@ -85,7 +85,7 @@ export function CountBars({ rows, total }) {
       {rows.map((r) => (
         <div className="hbar-row count" key={r.label}>
           <div className="hbar-label">{r.label}</div>
-          <div className="hbar-track"><div className="hbar-fill" style={{ width: `${(r.count / max) * 100}%`, background: r.color || "var(--series-1)" }} /></div>
+          <div className="hbar-track"><div className="hbar-fill" style={{ width: `${(r.count / max) * 100}%`, background: r.color || "var(--grad)" }} /></div>
           <div className="hbar-value">{r.count}{total ? <span className="faint"> {Math.round((r.count / total) * 100)}%</span> : null}</div>
         </div>
       ))}
