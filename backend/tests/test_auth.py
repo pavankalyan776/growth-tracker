@@ -204,7 +204,7 @@ def test_tracker_routes_wait_for_onboarding(signup):
 
 def test_onboarding_validates_the_plan(signup):
     api = signup(onboard=False)
-    def go(start, end, template="exam_ai"):
+    def go(start, end, template="wellbeing"):
         return api.post("/api/onboarding", params={"today": START},
                         json={"template": template, "plan_start": start, "plan_end": end})
     assert go("2026-10-10", "2026-10-01").status_code == 400     # ends before it starts
@@ -218,7 +218,7 @@ def test_onboarding_validates_the_plan(signup):
 
 def test_templates_are_listed_publicly(raw):
     keys = [t["key"] for t in raw.get("/api/templates").json()]
-    assert keys == ["wellbeing", "student", "exam_ai", "focus", "blank"]
+    assert keys == ["wellbeing", "student", "professional", "fitness", "skills", "blank"]
 
 
 # ---------------------------------------------------------------------------

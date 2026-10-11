@@ -178,6 +178,8 @@ def complete_onboarding(payload: schemas.OnboardingIn, today: Optional[date] = N
         raise HTTPException(status_code=400, detail="That starting plan isn't available. Pick another one.")
     crud.seed_quests(db, user.id, template)
     user.plan_start, user.plan_end, user.onboarded = payload.plan_start, payload.plan_end, True
+    if payload.name:
+        user.name = payload.name
     db.commit()
     cache.clear()
     crud.audit(db, "user.onboarded", actor=user, target=user, detail="template=" + payload.template)

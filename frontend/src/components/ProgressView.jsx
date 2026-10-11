@@ -37,6 +37,7 @@ export default function ProgressView({ route }) {
   const [journal, setJournal] = useState([]);
   const [error, setError] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [allMissed, setAllMissed] = useState(false);
   const open = (d) => route.navigate(`today/${d}`);
 
   useEffect(() => {
@@ -75,23 +76,28 @@ export default function ProgressView({ route }) {
         <Tile emoji="🌧️" label="Missed days" value={s.missed_days} sub="see the ledger below" tone={s.missed_days ? "warn" : ""} />
       </div>
 
-      <Card title="🗺️ Consistency map" hint={`Every day of your plan. Darker means more ${w.habitsLower} done.`} wide>
-        <Heatmap cells={heat} onPick={open} />
-      </Card>
-
       <div className="progress-grid">
-        <Card title="📅 Weekly completion"><WeeklyBars weeks={data.weeks} /></Card>
+        <Card title="🗺️ Consistency map" hint={`Every day of your plan. Darker means more ${w.habitsLower} done.`}>
+          <Heatmap cells={heat} onPick={open} />
+        </Card>
+        <Card title="📅 Weekly completion" hint="Each bar is one week. The current week is still in progress."><WeeklyBars weeks={data.weeks} /></Card>
+      </div>
+
+      <div className="progress-grid three">
+        <Card title={w.style === "calm" ? "💪 Consistency by strength" : "💪 Consistency by stat"}><HBars rows={statRows} /></Card>
+        <Card title="📆 Day-of-week pattern" hint="Find the days that quietly sink you."><HBars rows={weekdayRows} /></Card>
         <Card title="🗓️ Monthly average" hint="The tick marks the 80% line for the monthly coin bonus.">
           {monthRows.length ? <HBars rows={monthRows} target={80} /> : <div className="viz-empty">No full data yet.</div>}
         </Card>
-        <Card title={w.style === "calm" ? "💪 Consistency by strength" : "💪 Consistency by stat"}><HBars rows={statRows} /></Card>
-        <Card title="📆 Day-of-week pattern" hint="Find the days that quietly sink you."><HBars rows={weekdayRows} /></Card>
-        {data.weakest.length > 0 && (
+      </div>
+
+      <div className="progress-grid">
+        {data.weakest.length > 0 ? (
           <Card title="🔍 Needs attention" hint={`Your least-completed ${w.habitsLower} so far.`}>
             <HBars rows={data.weakest.map(questRow)} />
             {data.strongest.length > 0 && (<><h4 className="subhead">💪 Going strong</h4><HBars rows={data.strongest.map(questRow)} /></>)}
           </Card>
-        )}
+        ) : null}
         <Card title={w.style === "calm" ? "🌱 Strength growth" : "🌱 Stat growth"} hint={`Cumulative ${w.style === "calm" ? "points" : "XP"} in each area, week by week.`}><StatLines growth={data.stat_growth} /></Card>
       </div>
 
@@ -99,7 +105,7 @@ export default function ProgressView({ route }) {
         <Card title="🌧️ Setbacks ledger" hint="Days that didn't count. Every one is a lesson, and a streak shield can repair any of them.">
           {data.missed.length === 0 ? <Empty emoji="🌈" title="No missed days">Keep it that way.</Empty> : (
             <ul className="ledger">
-              {data.missed.map((m) => (
+              {(allMissed ? data.missed : data.missed.slice(0, 5)).map((m) => (
                 <li key={m.date}>
                   <div className="ledger-main">
                     <strong>{formatShort(parseKey(m.date))}</strong>
@@ -110,6 +116,11 @@ export default function ProgressView({ route }) {
                 </li>
               ))}
             </ul>
+          )}
+          {data.missed.length > 5 && (
+            <button type="button" className="link-btn" style={{ marginTop: 12, alignSelf: "flex-start" }} onClick={() => setAllMissed(!allMissed)}>
+              {allMissed ? "Show fewer" : `Show all ${data.missed.length}`}
+            </button>
           )}
         </Card>
         <Card title="📔 Growth log" hint="Your private daily entries.">

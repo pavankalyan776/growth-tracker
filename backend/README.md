@@ -1,4 +1,4 @@
-# Backend: FastAPI + SQLAlchemy (v5)
+# Backend: FastAPI + SQLAlchemy (v6)
 
 Works on **Python 3.9+** (tested on 3.9 and 3.13).
 
@@ -40,7 +40,7 @@ app/
   cache.py         tiny in-process TTL cache (CACHE_SECONDS, default 20; 0 turns it off)
   shop.py · seed_data.py   gradient themes, titles, built-in starting plans
   routers/         auth.py · tracker.py · admin.py
-tests/             121 pytest tests (auth, isolation, RBAC, privacy, game rules, dares, boss, Hall, challenges, content studio, upgrade)
+tests/             128 pytest tests (auth, isolation, RBAC, privacy, game rules, dares, boss, Hall, challenges, content studio, upgrade)
 Procfile           Railway start command
 ```
 

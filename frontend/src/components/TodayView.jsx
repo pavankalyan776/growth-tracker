@@ -206,7 +206,8 @@ export default function TodayView({ dateKey, route }) {
 
         <section className="card" aria-label={w.habits}>
           <div className="card-head"><h3 className="card-title">📝 {w.habits}</h3>
-            {day && total > 0 ? <span className="card-sub">{count} of {total} {w.cleared}</span> : null}</div>
+            {day && total > 0 ? <span className="card-sub">{count} of {total} {w.cleared}</span> : null}
+            <a className="card-sub edit-link" href="#/quests">✏️ Edit timetable</a></div>
           {!day ? (
             <div className="stack">{[0, 1, 2, 3].map((i) => <div key={i} className="skel" style={{ height: 64 }} />)}</div>
           ) : total === 0 ? (
@@ -221,6 +222,8 @@ export default function TodayView({ dateKey, route }) {
           )}
         </section>
 
+        {isToday && <ForYou o={o} />}
+
         {day && day.in_plan && !isFuture && (
           <JournalCard key={key} dateKey={key} initial={day.journal} onSaved={(res) => {
             if (res.events && res.events.length) { commit(res); refresh(); }
@@ -230,6 +233,56 @@ export default function TodayView({ dateKey, route }) {
 
       <aside className="today-side"><SidePanel o={o} todayKey={toKey(today)} /></aside>
     </div>
+  );
+}
+
+/* A short, changing feed of "what's next" cards built from numbers we already have. No extra requests. */
+function ForYou({ o }) {
+  const { w } = useLook();
+  const cards = [];
+  const live = (o.challenges || []).filter((c) => c.status === "active" && c.done < c.target);
+  if (o.current_streak > 0 && o.current_streak < o.longest_streak) {
+    cards.push({ k: "streak", emoji: "🔥", title: `${o.current_streak}-day streak`, body: `${o.longest_streak - o.current_streak + 1} more days beats your best of ${o.longest_streak}.`, value: o.current_streak, max: o.longest_streak + 1, to: "progress", cta: "See progress" });
+  } else if (o.current_streak > 0) {
+    cards.push({ k: "streak", emoji: "🏆", title: `Best streak ever: ${o.current_streak} days`, body: "Every day you finish pushes your record higher.", to: "progress", cta: "See progress" });
+  } else {
+    cards.push({ k: "streak", emoji: "🌱", title: "Start a fresh streak", body: `Finish every ${w.habit} today and the count starts at 1.`, to: "calendar", cta: "Open plan" });
+  }
+  if (o.boss) {
+    cards.push(o.boss.defeated
+      ? { k: "boss", emoji: "🎉", title: `${o.boss.name} defeated`, body: "You won this week's boss. A new one arrives on Monday.", to: "challenges", cta: "Challenges" }
+      : { k: "boss", emoji: "⚔️", title: o.boss.name, body: `${o.boss.remaining} more ${o.boss.remaining === 1 ? w.habit : w.habitsLower} to win. ${o.boss.days_left <= 1 ? "Last day!" : `${o.boss.days_left} days left.`}`, value: o.boss.done, max: o.boss.hp, to: "challenges", cta: "Challenges" });
+  }
+  if (live.length) {
+    const c = [...live].sort((x, y) => (y.done / y.target) - (x.done / x.target))[0];
+    cards.push({ k: "challenge", emoji: c.emoji, title: c.title, body: `${c.target - c.done} check-in${c.target - c.done === 1 ? "" : "s"} to go. Finish it for coins and XP.`, value: c.done, max: c.target, to: "challenges", cta: "Check in" });
+  } else {
+    cards.push({ k: "challenge", emoji: "🎯", title: "Build your own challenge", body: "Pick something small. Walk, read, drink water. You choose how long.", to: "challenges", cta: "Start one" });
+  }
+  if (o.coins >= 150) {
+    cards.push({ k: "coins", emoji: "🛍️", title: `${o.coins} coins to spend`, body: "New colours and titles are waiting in Rewards.", to: "shop", cta: "Open Rewards" });
+  } else if (o.next_rank) {
+    cards.push({ k: "rank", emoji: "⬆️", title: `${o.next_rank.xp_to_go} XP to ${w.rankLabel(o.next_rank.rank)}`, body: `Reach level ${o.next_rank.level} to move up.`, value: o.xp_into_level, max: o.xp_per_level, to: "progress", cta: "See progress" });
+  }
+  return (
+    <section aria-label="For you">
+      <div className="shelf-head"><h3 className="card-title">✨ For you</h3><span className="muted small">What to chase next</span></div>
+      <ul className="feed-cards">
+        {cards.slice(0, 4).map((c) => (
+          <li key={c.k}>
+            <a className={`feed-card feed-${c.k}`} href={`#/${c.to}`} aria-label={`${c.title}. ${c.body} ${c.cta}`}>
+              <span className="feed-emoji emoji" aria-hidden="true">{c.emoji}</span>
+              <div className="feed-body">
+                <b className="display">{c.title}</b>
+                <p className="small muted">{c.body}</p>
+                {c.max ? <Bar value={c.value} max={c.max} thin label={c.title} /> : null}
+              </div>
+              <span className="feed-go" aria-hidden="true">›</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

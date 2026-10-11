@@ -1,4 +1,4 @@
-# Frontend: React + Vite (v5)
+# Frontend: React + Vite (v6)
 
 ```bash
 npm install

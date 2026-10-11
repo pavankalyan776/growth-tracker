@@ -38,10 +38,10 @@ def test_overview_numbers(signup, admin):
         _clear_day(alice, d)
     o = admin.get("/api/admin/overview", params={"today": "2026-09-18"}).json()
     t = o["totals"]
-    assert t["users"] == 3 and t["admins"] == 1 and t["onboarded"] == 1
+    assert t["users"] == 2 and t["admins"] == 1 and t["onboarded"] == 1       # admins are not counted as members
     assert t["tasks_done"] == 21
     steps = {f["step"]: f["count"] for f in o["funnel"]}
-    assert steps["Registered"] == 3 and steps["Finished a task"] == 1 and steps["3-day streak"] == 1
+    assert steps["Registered"] == 2 and steps["Finished a task"] == 1 and steps["3-day streak"] == 1
     assert steps["7-day streak"] == 0
     assert len(o["series"]) == 30
     last = [s for s in o["series"] if s["date"] == "2026-09-18"][0]
@@ -59,8 +59,9 @@ def test_user_list_search_filter_sort_and_pages(signup, admin):
     p = {"today": "2026-09-18"}
     assert admin.get("/api/admin/users", params=dict(p, q="bob")).json()["total"] == 1
     assert admin.get("/api/admin/users", params=dict(p, role="admin")).json()["total"] == 1
+    assert admin.get("/api/admin/users", params=dict(p, role="all")).json()["total"] == 4
     page = admin.get("/api/admin/users", params=dict(p, page_size=2)).json()
-    assert page["total"] == 4 and len(page["items"]) == 2
+    assert page["total"] == 3 and len(page["items"]) == 2          # members only by default
     by_level = admin.get("/api/admin/users", params=dict(p, sort="level", order="desc")).json()["items"]
     assert by_level[0]["email"] == "alice@example.com"
     assert by_level[0]["stats"]["current_streak"] == 2

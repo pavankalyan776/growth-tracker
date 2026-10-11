@@ -60,7 +60,7 @@ def raw(request):
 
 @pytest.fixture()
 def signup(raw):
-    def _signup(email="hunter@example.com", name="Messi", onboard=True, template="exam_ai"):
+    def _signup(email="hunter@example.com", name="Messi", onboard=True, template="wellbeing"):
         r = raw.post("/api/auth/register", json={"email": email, "password": PASSWORD, "name": name})
         assert r.status_code == 201, r.text
         api = Api(raw, r.json()["token"], r.json()["user"])
@@ -75,7 +75,7 @@ def signup(raw):
 
 @pytest.fixture()
 def client(signup):
-    """A signed-in, onboarded hunter (exam_ai template, 16 Sep to 31 Dec 2026)."""
+    """A signed-in, onboarded hunter (wellbeing template, 16 Sep to 31 Dec 2026)."""
     return signup()
 
 

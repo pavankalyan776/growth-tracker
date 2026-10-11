@@ -18,6 +18,7 @@ export default function Onboarding({ onSkipToAdmin }) {
   const { user, setUser } = useAuth();
   const { w } = useLook();
   const [avatar, setAvatar] = useState(user.avatar || "spark");
+  const [name, setName] = useState(user.name || "");
   const today = useMemo(getToday, []);
   const [step, setStep] = useState(0);
   const [templates, setTemplates] = useState([]);
@@ -35,12 +36,15 @@ export default function Onboarding({ onSkipToAdmin }) {
   const preset = (n) => { setStart(toKey(today)); setEnd(toKey(addDays(today, n - 1))); };
   const chosen = templates.find((t) => t.key === template);
 
+  const cleanName = name.replace(/\s+/g, " ").trim();
+  const nameError = cleanName.length < 2 ? "Use at least 2 characters." : cleanName.length > 20 ? "Use 20 characters or fewer." : /[<>]/.test(cleanName) ? "No < or > please." : "";
+
   const finish = async () => {
     setBusy(true);
     setError("");
     try {
       if (avatar !== user.avatar) await api.updateProfile({ avatar });
-      setUser(await api.onboard(template, start, end));
+      setUser(await api.onboard(template, start, end, cleanName !== user.name ? cleanName : undefined));
     } catch (err) {
       setError(err.message);
       setBusy(false);
@@ -50,7 +54,7 @@ export default function Onboarding({ onSkipToAdmin }) {
   return (
     <div className="onboard">
       <div className="onboard-inner">
-        <p className="system-line"><span className="chip info">{w.coachEmoji} {w.coach}</span> {w.setupLine(user.name)}</p>
+        <p className="system-line"><span className="chip info">{w.coachEmoji} {w.coach}</span> {w.setupLine(cleanName || user.name)}</p>
         <ol className="steps" aria-label="Setup progress">
           {STEPS.map((s, i) => (
             <li key={s} className={i === step ? "is-current" : i < step ? "is-done" : ""} aria-current={i === step ? "step" : undefined}>
@@ -64,6 +68,11 @@ export default function Onboarding({ onSkipToAdmin }) {
             <>
               <h2 className="display">Make it yours 🎨</h2>
               <p className="muted">You can change all of this later in Profile.</p>
+              <div className="field"><label htmlFor="ob-name">{w.yourName}</label>
+                <input id="ob-name" className="input" value={name} maxLength={20} autoComplete="nickname" placeholder={w.namePlaceholder}
+                  onChange={(e) => setName(e.target.value)} aria-invalid={!!nameError} />
+                {nameError ? <p className="error-text" role="alert">{nameError}</p> : <p className="help">This is what you'll see and what the leaderboard shows if you join it. Change it any time in Profile.</p>}
+              </div>
               <Appearance />
               <div className="field">
                 <span className="label" id="ob-avatar">Pick an avatar</span>
@@ -90,7 +99,7 @@ export default function Onboarding({ onSkipToAdmin }) {
                     <span className="choice-emoji emoji" aria-hidden="true">{t.emoji}</span>
                     <b className="display">{t.label}</b>
                     <span>{t.desc}</span>
-                    {t.preview && t.preview.length > 0 ? <span className="small faint">e.g. {t.preview.slice(0, 3).join(", ")}</span> : null}
+                    {t.preview && t.preview.length > 0 ? <span className="small faint">e.g. {t.preview.slice(0, 4).join(", ")}</span> : null}
                     <small className="chip">{t.quests === 0 ? `No ${w.habitsLower} yet` : `${t.quests} ${w.habitsLower} across the week`}</small>
                   </button>
                 ))}
@@ -121,7 +130,7 @@ export default function Onboarding({ onSkipToAdmin }) {
             <>
               <h2 className="display">{w.readyTitle} 🚀</h2>
               <dl className="summary">
-                <div><dt>Name</dt><dd>{user.name}</dd></div>
+                <div><dt>Name</dt><dd>{cleanName} <button type="button" className="link-btn small" onClick={() => setStep(0)}>Edit</button></dd></div>
                 <div><dt>{w.habits}</dt><dd>{chosen ? `${chosen.emoji} ${chosen.label}` : template}</dd></div>
                 <div><dt>Plan</dt><dd>{formatFull(parseKey(start))} to {formatFull(parseKey(end))}</dd></div>
                 <div><dt>Length</dt><dd>{days} days</dd></div>
@@ -133,9 +142,9 @@ export default function Onboarding({ onSkipToAdmin }) {
           <div className="onboard-actions">
             {step > 0 ? <button type="button" className="btn ghost" onClick={() => setStep(step - 1)} disabled={busy}>Back</button> : <span />}
             {step < 3 ? (
-              <button type="button" className="btn" onClick={() => setStep(step + 1)} disabled={step === 2 && !!planError}>Continue</button>
+              <button type="button" className="btn" onClick={() => setStep(step + 1)} disabled={(step === 0 && !!nameError) || (step === 2 && !!planError)}>Continue</button>
             ) : (
-              <button type="button" className="btn" onClick={finish} disabled={busy}>{busy ? "One moment…" : `${w.enter} 🚀`}</button>
+              <button type="button" className="btn" onClick={finish} disabled={busy || !!nameError}>{busy ? "One moment…" : `${w.enter} 🚀`}</button>
             )}
           </div>
         </div>

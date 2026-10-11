@@ -1,10 +1,27 @@
-# Growth Tracker (v5)
+# Growth Tracker (v6)
 
 A daily growth tracker for everyone. Turn your habits into quests (or keep them as plain habits), build streaks,
 beat a weekly boss, take a daily dare, and watch your level rise. It started as a Solo Leveling-style game and
 now has two looks, so it works just as well for people who don't care for games.
 
 FastAPI + SQLAlchemy (SQLite locally, MySQL in production) and React (Vite). Every reward is virtual.
+
+## What's new in v6
+
+- **Default timetables by category.** Setup now offers Everyday wellbeing, Student, Working professional, Fitness and
+  health, Skill builder, or a blank slate. Each has 7 tasks with times for weekdays, Saturdays and Sundays. They are
+  plain defaults: everything can be edited, added or deleted afterwards. The old personal plans ("Exam + AI Engineer",
+  "Deep focus") are removed from the database on start-up; members who already picked one keep their own tasks.
+- **My timetable** (renamed from My tasks) lives under Plan and also inside **Challenges**, so the tasks are easy to
+  find. Add, rename, re-time or delete anything.
+- **Your name is editable during setup** (and in Profile, and for the admin in My account).
+- **Admins are kept out of member numbers.** Admin accounts never appear in the Leaderboard, and the admin console
+  counts members only (one "Members" total). The Members page shows members by default; switch the filter to see
+  admin accounts or everyone.
+- **A new Rewards page**: a coin wallet with a "next reward" progress bar, how-to-earn list, colour themes with live
+  mini previews, and titles with Starter to Legendary tiers.
+- **Smaller type** (15px body), a **"For you" feed** on Today (streak, boss, challenge, level and coin nudges), a
+  Look menu that no longer hides behind the page, and Progress cards that line up in even rows.
 
 ## What's new in v5
 
@@ -14,7 +31,7 @@ FastAPI + SQLAlchemy (SQLite locally, MySQL in production) and React (Vite). Eve
 - **A new look: "Sunset".** Orange-to-raspberry gradient on warm peach paper (Day) or deep plum (Night), rounded
   shapes, soft shadows, and two new fonts: **Fredoka** for headings and **Nunito** for text. The eight shop colours
   are now gradients too. Emoji appear throughout the copy (stats 💪📚🎯🌿⚡, streak 🔥, coins 🪙, moods, milestones).
-- **A grouped menu.** Six places instead of nine: Today, Plan (Calendar + My tasks), Challenges (Challenges +
+- **A grouped menu.** Six places instead of nine: Today, Plan (Calendar + My timetable), Challenges (Challenges +
   Leaderboard), Progress, Rewards (Shop + Milestones), Profile. A bottom tab bar on phones.
 - **Challenges hub.** The daily dare, the weekly boss and **challenges you build yourself** from a form: pick an
   emoji, a name, how many check-ins and how many days. Finish one for +15 coins and +30 XP (up to 2 rewarded a week).
@@ -29,10 +46,10 @@ FastAPI + SQLAlchemy (SQLite locally, MySQL in production) and React (Vite). Eve
 | Screen | What it does |
 |---|---|
 | Today | Announcements, greeting and progress ring, weekly boss, daily dare, the day's tasks, daily log; level, your challenges, stats on the side |
-| Plan | Calendar (open and fix any past day) and My tasks (full CRUD, max 20 per day type) |
+| Plan | Calendar (open and fix any past day) and My timetable (full CRUD, max 20 per day type, also reachable from Challenges) |
 | Challenges | Dare, boss, your own challenges and a builder; the opt-in Leaderboard tab |
 | Progress | Heatmap, weekly/monthly completion, stat consistency, weakest tasks, setbacks ledger, JSON backup |
-| Rewards | Shop (titles and gradient colours) and 22 milestones |
+| Rewards | Coin wallet, colour themes with previews, tiered titles, and 22 milestones |
 | Profile | Name, avatar, look, Leaderboard opt-in, plan window, password, sign out everywhere, delete account |
 | Admin: Dashboard, Members, Content studio, Audit log, My account | Admin only, in a separate app |
 
@@ -83,6 +100,10 @@ You can also promote an existing account: `python -m app.make_admin you@example.
 
 ### Upgrading
 
+- **From v5**: nothing to delete. Restart the backend and run `npm install`. On start-up the old built-in plans
+  "Exam + AI Engineer" and "Deep focus" are removed and the new category timetables are added. Built-in plans an admin
+  has never edited are refreshed to the new wording; ones an admin edited are left alone.
+
 - **From v4**: nothing to delete. Run `pip install -r requirements.txt` and `npm install` (v5 swaps the fonts).
   Your database is upgraded in place on startup: new tables (challenges, dares, announcements, starting plans) are
   created, one column is added, and the old colour themes map to the new Sunset family (your default becomes Sunset).
@@ -95,7 +116,7 @@ You can also promote an existing account: `python -m app.make_admin you@example.
 ## Tests
 
 ```bash
-# backend: 121 tests on a temp database (never touches yours)
+# backend: 128 tests on a temp database (never touches yours)
 cd backend && pip install -r requirements-dev.txt && python -m pytest
 
 # frontend: renders the real app against a running throwaway backend

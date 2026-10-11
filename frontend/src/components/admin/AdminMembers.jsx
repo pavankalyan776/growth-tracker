@@ -19,7 +19,7 @@ const COLUMNS = [
 
 export default function AdminMembers() {
   const [q, setQ] = useState("");
-  const [role, setRole] = useState("");
+  const [role, setRole] = useState("user");
   const [status, setStatus] = useState("");
   const [sort, setSort] = useState("joined");
   const [order, setOrder] = useState("desc");
@@ -49,7 +49,7 @@ export default function AdminMembers() {
         <div className="field grow"><label htmlFor="uq">Search</label>
           <div className="input-wrap"><input id="uq" className="input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name or email" /></div></div>
         <div className="field"><label htmlFor="ur">Role</label>
-          <select id="ur" className="select" value={role} onChange={(e) => setRole(e.target.value)}><option value="">All roles</option><option value="user">Members</option><option value="admin">Admins</option></select></div>
+          <select id="ur" className="select" value={role} onChange={(e) => setRole(e.target.value)}><option value="user">Members only</option><option value="admin">Admin accounts</option><option value="all">Everyone</option></select></div>
         <div className="field"><label htmlFor="us">Status</label>
           <select id="us" className="select" value={status} onChange={(e) => setStatus(e.target.value)}><option value="">Any status</option><option value="active">Active</option><option value="disabled">Disabled</option></select></div>
       </section>
@@ -74,7 +74,7 @@ export default function AdminMembers() {
             </thead>
             <tbody>
               {!data && Array.from({ length: 6 }, (_, i) => <tr key={i}><td colSpan={COLUMNS.length}><div className="skel" style={{ height: 40 }} /></td></tr>)}
-              {data && data.items.length === 0 && <tr><td colSpan={COLUMNS.length}><Empty emoji="🔍" title="No members match">Try a different search or clear the filters.</Empty></td></tr>}
+              {data && data.items.length === 0 && <tr><td colSpan={COLUMNS.length}><Empty emoji="🔍" title="No members match">Try a different search, or change the filter.</Empty></td></tr>}
               {data && data.items.map((u) => (
                 <tr key={u.id} className={u.is_active ? "" : "is-disabled"} onClick={() => setOpenId(u.id)}>
                   <td>
@@ -186,7 +186,9 @@ function UserDrawer({ id, onClose, onChanged }) {
                   </div>
                   <p className="small faint">Plan: {u.plan_start} to {u.plan_end}. {s.quest_count} tasks, {s.journal_entries} journal entries (private).</p>
                 </section>
-              ) : <p className="muted">This member hasn't set up a plan yet, so there's no progress to show.</p>}
+              ) : u.role === "admin"
+                ? <p className="muted">Admin accounts aren't counted as members, so they have no member stats here.</p>
+                : <p className="muted">This member hasn't set up a plan yet, so there's no progress to show.</p>}
 
               <section className="drawer-sec">
                 <h3 className="subhead">🧾 Account</h3>

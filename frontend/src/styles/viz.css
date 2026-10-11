@@ -1,7 +1,6 @@
 /* Charts. Thin marks, rounded ends, quiet grid. Colour sits on the mark, never on the text. */
 .viz-svg, .hm, .radar { width: 100%; height: auto; display: block; overflow: visible; }
-.hm { max-width: 600px; }
-.hm .viz-axis-text { font-size: 6.5px; }
+.hm .viz-axis-text { font-size: 7.5px; }
 .viz-grid { stroke: var(--viz-grid); stroke-width: 1; }
 .viz-axis { stroke: var(--viz-axis); stroke-width: 1; }
 .viz-axis-text { fill: var(--viz-text); font-size: 10px; font-family: var(--font-body); font-weight: 700; }

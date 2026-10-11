@@ -52,9 +52,11 @@ describe("Growth Tracker v5", () => {
     fireEvent.click(screen.getByRole("button", { name: /Create account/ }));
 
     expect(await screen.findByText(/Make it yours/i, {}, wait)).toBeTruthy();
+    type("Hunter name", "Smoky Two");                       // the name can be changed during setup
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-    expect(await screen.findByText(/Pick your starting quests/i)).toBeTruthy();
-    fireEvent.click(await screen.findByRole("radio", { name: /Exam \+ AI Engineer/i }));
+    expect(await screen.findByText(/Pick a starting timetable/i)).toBeTruthy();
+    expect(screen.queryByText(/Exam \+ AI/i)).toBeNull();     // no personal plans in the list
+    fireEvent.click(await screen.findByRole("radio", { name: /Student/i }));
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
     expect(await screen.findByText(/Set your plan window/i)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
@@ -63,6 +65,7 @@ describe("Growth Tracker v5", () => {
     const boxes = await screen.findAllByRole("checkbox", {}, wait);
     expect(boxes.length).toBeGreaterThan(3);
     expect(boxes[0].getAttribute("aria-checked")).toBe("false");
+    expect(document.body.textContent).toContain("Smoky Two");
     fireEvent.click(boxes[0]);
     await waitFor(() => expect(screen.getAllByRole("checkbox")[0].getAttribute("aria-checked")).toBe("true"));
 
@@ -81,7 +84,7 @@ describe("Growth Tracker v5", () => {
     }
     go("#/quests");
     expect(await screen.findByRole("link", { name: /Calendar/ }, wait)).toBeTruthy();
-    expect(screen.getByRole("link", { name: /My quests/ }).getAttribute("aria-current")).toBe("page");
+    expect(screen.getByRole("link", { name: /My timetable/ }).getAttribute("aria-current")).toBe("page");
   });
 
   it("clears a daily dare, then switches to the Calm words", async () => {
@@ -107,6 +110,23 @@ describe("Growth Tracker v5", () => {
     fireEvent.click(within(card).getByRole("button", { name: /Check in today/ }));
     await waitFor(() => expect(within(card).getByRole("button", { name: /Checked in/ }).getAttribute("aria-pressed")).toBe("true"), wait);
     await waitFor(() => expect(card.textContent).toMatch(/1 of 7 check-ins/));
+  });
+
+  it("lets a member add and delete timetable tasks from the Challenges page", async () => {
+    await signIn(email, "Smoke1234pass");
+    await screen.findAllByRole("checkbox", {}, wait);
+    go("#/challenges");
+    expect(await screen.findByText(/My daily timetable/i, {}, wait)).toBeTruthy();
+    const rows = () => screen.queryAllByLabelText(/^(Quest|Habit)$/).length;
+    await screen.findAllByLabelText(/^(Quest|Habit)$/, {}, wait);
+    const before = rows();
+    expect(before).toBe(7);
+    fireEvent.change(screen.getByLabelText(/^New /), { target: { value: "Read 20 pages" } });
+    fireEvent.click(screen.getByRole("button", { name: /Add (quest|habit)/ }));
+    await waitFor(() => expect(rows()).toBe(before + 1), wait);
+    fireEvent.click(screen.getByLabelText("Delete Read 20 pages"));
+    fireEvent.click(await screen.findByRole("button", { name: "Delete" }));
+    await waitFor(() => expect(rows()).toBe(before), wait);
   });
 
   it("shows the Leaderboard as an opt-in, not a public list", async () => {

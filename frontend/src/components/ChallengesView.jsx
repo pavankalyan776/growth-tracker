@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { BossCard, ChallengeBuilder, ChallengeCard, DareCard } from "./Challenges";
+import QuestManager from "./QuestManager";
 import { Empty, ErrorNote, Skeletons } from "./ui";
 import { api } from "../api";
 import { useGame } from "../game";
@@ -58,6 +59,7 @@ export default function ChallengesView() {
 
       <div className="row wrap" style={{ marginTop: 8 }}>
         <h2 className="section-title display grow" style={{ margin: 0 }}>🎯 My challenges <small>{live.length} of {data.max_active} live</small></h2>
+        <button type="button" className="btn ghost" onClick={() => { const el = document.getElementById("timetable"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }}>🗓️ Edit my timetable</button>
         <button type="button" className="btn" onClick={() => setBuilding(true)} disabled={full} title={full ? "Finish or delete one first" : undefined}>➕ Build a challenge</button>
       </div>
       <p className="muted small">Pick something small, say how many check-ins and how many days. Finish it for 🪙 +{data.reward.coins} and ✨ +{data.reward.xp} XP (up to {data.reward.weekly_cap} rewarded a week).</p>
@@ -90,6 +92,10 @@ export default function ChallengesView() {
           {showArchived && <div className="cc-grid">{archived.map((c) => <ChallengeCard key={c.id} c={c} todayKey={todayKey} onChange={onChange} />)}</div>}
         </>
       )}
+
+      <h2 className="section-title display" id="timetable">🗓️ My daily timetable <small>Add, edit or delete anything</small></h2>
+      <p className="muted small">Your {w.habitsLower} come from the timetable you picked at setup. Change a time, rename one, add your own or delete the ones you don't need.</p>
+      <QuestManager />
 
       {building && <ChallengeBuilder onClose={() => setBuilding(false)} onCreated={created} planEnd={o.plan.end} />}
     </div>

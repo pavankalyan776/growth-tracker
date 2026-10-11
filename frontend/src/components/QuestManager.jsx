@@ -9,8 +9,8 @@ import { STAT_EMOJI, useLook, useStatNames } from "../look";
 const STAT_KEYS = ["STR", "INT", "PER", "VIT", "AGI"];
 const SECTIONS = [
   { key: "weekday", title: "Weekdays", emoji: "💼", hint: "Monday to Friday" },
-  { key: "saturday", title: "Saturday", emoji: "🎉", hint: "Deep focus and a mock test" },
-  { key: "sunday", title: "Sunday", emoji: "🌤️", hint: "Review and rest" },
+  { key: "saturday", title: "Saturday", emoji: "🎉", hint: "Every Saturday" },
+  { key: "sunday", title: "Sunday", emoji: "🌤️", hint: "Every Sunday" },
 ];
 
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);

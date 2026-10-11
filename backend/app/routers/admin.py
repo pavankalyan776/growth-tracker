@@ -46,31 +46,41 @@ class _Q:
 
 
 def _compute_world(db: Session, today: date) -> Dict[str, Any]:
-    users = db.query(models.User).all()
+    """Rolled-up numbers for MEMBERS. Admin accounts are not members: their own activity is left out of every total."""
+    users = db.query(models.User).filter(models.User.role == "user").all()
+    member_ids = {u.id for u in users}
     quests, comps, shields, dares, journal = (defaultdict(list), defaultdict(list), defaultdict(list),
                                               defaultdict(list), defaultdict(dict))
     for q in db.query(models.Quest).all():
-        quests[q.user_id].append(_Q(q))
+        if q.user_id in member_ids:
+            quests[q.user_id].append(_Q(q))
     active_by_day: Dict[date, set] = defaultdict(set)
     count_by_day: Dict[date, int] = defaultdict(int)
     for uid, qid, d in db.query(models.Completion.user_id, models.Completion.quest_id,
                                 models.Completion.date).filter(models.Completion.completed == True).all():  # noqa: E712
+        if uid not in member_ids:
+            continue
         comps[uid].append((qid, d))
         active_by_day[d].add(uid)
         count_by_day[d] += 1
     for uid, d in db.query(models.Shield.user_id, models.Shield.date).all():
-        shields[uid].append(d)
+        if uid in member_ids:
+            shields[uid].append(d)
     for uid, d in db.query(models.DareDone.user_id, models.DareDone.date).all():
-        dares[uid].append(d)
+        if uid in member_ids:
+            dares[uid].append(d)
     # Only the DATE of each journal entry is loaded. The text never leaves the database here.
     for uid, d in db.query(models.Journal.user_id, models.Journal.date).all():
-        journal[uid][d] = True
+        if uid in member_ids:
+            journal[uid][d] = True
     challenges, checkins = defaultdict(list), defaultdict(lambda: defaultdict(list))
     for c in db.query(models.Challenge).all():
-        challenges[c.user_id].append(c)
+        if c.user_id in member_ids:
+            challenges[c.user_id].append(c)
     for uid, cid, d in db.query(models.ChallengeCheckin.user_id, models.ChallengeCheckin.challenge_id,
                                 models.ChallengeCheckin.date).all():
-        checkins[uid][cid].append(d)
+        if uid in member_ids:
+            checkins[uid][cid].append(d)
     custom = db.query(models.CustomDare).all()
 
     stats: Dict[int, Optional[dict]] = {}
@@ -118,8 +128,9 @@ def _get_target(db: Session, user_id: int) -> models.User:
 
 @router.get("/overview")
 def overview(today: date = Depends(resolve_today), db: Session = Depends(get_db)):
-    users = db.query(models.User.id, models.User.created_at, models.User.last_active_at, models.User.is_active,
-                     models.User.role, models.User.onboarded).all()
+    users = (db.query(models.User.id, models.User.created_at, models.User.last_active_at, models.User.is_active,
+                      models.User.role, models.User.onboarded).filter(models.User.role == "user").all())
+    admin_count = db.query(models.User).filter(models.User.role == "admin").count()
     world = _world(db, today)
     now = utcnow()
 
@@ -155,7 +166,7 @@ def overview(today: date = Depends(resolve_today), db: Session = Depends(get_db)
             "users": len(users),
             "active_accounts": sum(1 for u in users if u.is_active),
             "disabled": sum(1 for u in users if not u.is_active),
-            "admins": sum(1 for u in users if u.role == "admin"),
+            "admins": admin_count,
             "onboarded": sum(1 for u in users if u.onboarded),
             "new_7d": sum(1 for u in users if u.created_at >= now - timedelta(days=7)),
             "active_1d": active_since(1), "active_7d": active_since(7), "active_30d": active_since(30),
@@ -181,7 +192,7 @@ STAT_SORTS = {"level", "streak", "completion"}
 @router.get("/users")
 def list_users(
     q: str = Query(default="", max_length=100),
-    role: str = Query(default="", pattern=r"^(|user|admin)$"),
+    role: str = Query(default="user", pattern=r"^(user|admin|all)$"),
     status: str = Query(default="", pattern=r"^(|active|disabled)$"),
     sort: str = "joined", order: str = Query(default="desc", pattern=r"^(asc|desc)$"),
     page: int = Query(default=1, ge=1), page_size: int = Query(default=20, ge=1, le=100),
@@ -193,7 +204,7 @@ def list_users(
     if q.strip():
         like = "%{}%".format(q.strip().lower().replace("%", "").replace("_", ""))
         query = query.filter(func.lower(models.User.email).like(like) | func.lower(models.User.name).like(like))
-    if role:
+    if role != "all":
         query = query.filter(models.User.role == role)
     if status:
         query = query.filter(models.User.is_active == (status == "active"))

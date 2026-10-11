@@ -312,15 +312,15 @@ def test_admin_creates_a_plan_and_a_new_member_can_choose_it(signup, admin):
 
 
 def test_hidden_plans_cannot_be_chosen_and_builtins_cannot_be_deleted(signup, admin):
-    assert admin.patch("/api/admin/content/templates/focus", json={"active": False}).status_code == 200
-    assert "focus" not in [t["key"] for t in admin.get("/api/templates").json()]
+    assert admin.patch("/api/admin/content/templates/skills", json={"active": False}).status_code == 200
+    assert "skills" not in [t["key"] for t in admin.get("/api/templates").json()]
     api = signup("m@example.com", "Member", onboard=False)
     r = api.post("/api/onboarding", params={"today": T},
-                 json={"template": "focus", "plan_start": T, "plan_end": "2026-12-31"})
+                 json={"template": "skills", "plan_start": T, "plan_end": "2026-12-31"})
     assert r.status_code == 400
-    assert admin.delete("/api/admin/content/templates/focus").status_code == 400
-    admin.patch("/api/admin/content/templates/focus", json={"active": True})
-    assert "focus" in [t["key"] for t in admin.get("/api/templates").json()]
+    assert admin.delete("/api/admin/content/templates/skills").status_code == 400
+    admin.patch("/api/admin/content/templates/skills", json={"active": True})
+    assert "skills" in [t["key"] for t in admin.get("/api/templates").json()]
 
 
 def test_plan_editing_changes_what_new_members_get_but_not_existing_ones(signup, admin):
@@ -400,5 +400,5 @@ def test_every_theme_is_a_gradient_with_emoji_and_titles_have_emoji(client):
 
 def test_template_listing_has_emoji_and_preview(raw):
     items = raw.get("/api/templates").json()
-    assert [t["key"] for t in items] == ["wellbeing", "student", "exam_ai", "focus", "blank"]
+    assert [t["key"] for t in items] == ["wellbeing", "student", "professional", "fitness", "skills", "blank"]
     assert all(t["emoji"] for t in items) and items[0]["preview"] and items[-1]["preview"] == []

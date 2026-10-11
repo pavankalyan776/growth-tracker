@@ -804,7 +804,7 @@ def _board_rows(db: Session, today: date) -> List[dict]:
     monday = monday_of(today)
     members = (db.query(models.User)
                .filter(models.User.public_board == True, models.User.is_active == True,  # noqa: E712
-                       models.User.onboarded == True).all())
+                       models.User.onboarded == True, models.User.role == "user").all())    # admins never appear
     snaps = Snapshot.load_many(db, members)
     rows = []
     for u in members:

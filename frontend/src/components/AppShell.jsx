@@ -20,7 +20,7 @@ const MOBILE = ["today", "plan", "challenges", "progress"];
 export const groupOf = (name) => GROUPS.find((g) => g.pages.includes(name));
 
 export function tabsFor(group, w) {
-  if (group.key === "plan") return [["calendar", "🗓️ Calendar"], ["quests", `✅ ${w.myHabits}`]];
+  if (group.key === "plan") return [["calendar", "📅 Calendar"], ["quests", `🗓️ ${w.myHabits}`]];
   if (group.key === "challenges") return [["challenges", "🎯 Challenges"], ["hall", `🏆 ${w.hall}`]];
   if (group.key === "rewards") return [["shop", "🛍️ Shop"], ["achievements", `🏅 ${w.milestones}`]];
   return null;

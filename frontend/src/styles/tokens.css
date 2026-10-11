@@ -12,13 +12,13 @@
   --font-display: "Fredoka Variable", "Nunito Variable", "Segoe UI Rounded", system-ui, sans-serif;
   --font-body: "Nunito Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
 
-  /* type scale: body 16px, nothing readable under 14px. Everything grows with the Text size setting. */
-  --step--1: 0.875rem;
+  /* type scale: body 15px, nothing readable under 14px. Everything grows with the Text size setting. */
+  --step--1: 0.9375rem;
   --step-0: 1rem;
-  --step-1: 1.1875rem;
-  --step-2: 1.5rem;
-  --step-3: 2rem;
-  --step-4: 2.75rem;
+  --step-1: 1.15rem;
+  --step-2: 1.4rem;
+  --step-3: 1.85rem;
+  --step-4: 2.5rem;
 
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px;
 
@@ -104,8 +104,9 @@
 }
 
 /* ---------- Text size ---------- */
-:root[data-size="large"] { font-size: 112.5%; }
-:root[data-size="xl"] { font-size: 125%; }
+:root { font-size: 93.75%; }
+:root[data-size="large"] { font-size: 106.25%; }
+:root[data-size="xl"] { font-size: 118.75%; }
 
 /* ---------- Chart ramps, derived from the accent so every colour theme works ---------- */
 :root {

@@ -32,7 +32,7 @@ export default function AdminDashboard() {
   return (
     <div className="stack">
       <div className="tiles five">
-        <Kpi emoji="👥" label="Members" value={t.users} sub={`${t.admins} admin${t.admins === 1 ? "" : "s"}, ${t.disabled} disabled`} />
+        <Kpi emoji="👥" label="Members" value={t.users} sub={t.disabled ? `${t.disabled} disabled` : "everyone who signed up"} />
         <Kpi emoji="⚡" label="Active in 7 days" value={t.active_7d} sub={`${t.active_1d} in the last day`} />
         <Kpi emoji="🆕" label="New this week" value={t.new_7d} sub={`${t.onboarded} have set up a plan`} />
         <Kpi emoji="🎯" label="Avg completion, 7 days" value={`${t.avg_completion_7d}%`} sub={`avg streak ${t.avg_streak}`} />

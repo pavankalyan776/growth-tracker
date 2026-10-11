@@ -116,6 +116,12 @@ class OnboardingIn(BaseModel):
     template: str = Field(pattern=r"^[a-z0-9_]{1,30}$")
     plan_start: date_type
     plan_end: date_type
+    name: Optional[str] = None            # lets setup change the display name in the same request
+
+    @field_validator("name")
+    @classmethod
+    def _name(cls, v: Optional[str]) -> Optional[str]:
+        return _clean_name(v) if v is not None else v
 
 
 class UserOut(BaseModel):

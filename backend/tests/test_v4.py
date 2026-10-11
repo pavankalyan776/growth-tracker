@@ -260,7 +260,7 @@ def test_every_theme_has_light_and_dark_colours_and_titles_have_calm_names(clien
 
 
 def test_every_starting_plan_can_be_chosen(signup):
-    for i, key in enumerate(("wellbeing", "student", "exam_ai", "focus", "blank")):
+    for i, key in enumerate(("wellbeing", "student", "professional", "fitness", "skills", "blank")):
         api = signup("t{}@example.com".format(i), "Tester", template=key)
         n = len(api.get("/api/quests").json())
         assert (n == 0) == (key == "blank"), key

@@ -63,16 +63,31 @@ def migrate_theme_keys(db: Session) -> None:
 
 
 def seed_templates(db: Session) -> None:
-    """Make sure every built-in starting plan exists as a row. Never overwrites an admin's edits."""
+    """Keep the built-in starting timetables in step with the code, without ever overwriting an admin's edits.
+
+    New built-ins are added; retired ones are removed; a built-in that no admin has edited is refreshed to the
+    current wording and times."""
     import json
-    from .seed_data import TEMPLATES
-    have = {t.key for t in db.query(models.PlanTemplate).all()}
+    from .seed_data import RETIRED_TEMPLATES, TEMPLATES
+    rows = {t.key: t for t in db.query(models.PlanTemplate).all()}
+    for key in RETIRED_TEMPLATES:
+        row = rows.get(key)
+        if row is not None and row.builtin:
+            db.delete(row)
+            rows.pop(key)
     for i, (key, t) in enumerate(TEMPLATES.items()):
-        if key in have:
-            continue
         quests = [{k: q[k] for k in ("day_type", "label", "time_label", "stat")} for q in t["quests"]]
-        db.add(models.PlanTemplate(key=key, label=t["label"], desc=t["desc"], emoji=t.get("emoji", "🌱"),
-                                   builtin=True, sort_order=i, quests_json=json.dumps(quests)))
+        row = rows.get(key)
+        if row is None:
+            db.add(models.PlanTemplate(key=key, label=t["label"], desc=t["desc"], emoji=t.get("emoji", "🌱"),
+                                       builtin=True, sort_order=i, quests_json=json.dumps(quests)))
+            continue
+        row.sort_order = i
+        edited = (db.query(models.AuditLog.id)
+                  .filter(models.AuditLog.action == "content.template_edit",
+                          models.AuditLog.detail.like(key + ":%")).first())
+        if row.builtin and not edited:
+            row.label, row.desc, row.emoji, row.quests_json = t["label"], t["desc"], t.get("emoji", "🌱"), json.dumps(quests)
     db.commit()
 
 
