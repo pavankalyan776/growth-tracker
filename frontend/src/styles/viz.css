@@ -1,0 +1,54 @@
+/* ---------- Charts (plain SVG; palette comes from tokens.css) ---------- */
+.viz-svg, .hm { width: 100%; display: block; overflow: visible; }
+.hm { max-width: 720px; }
+.viz-axis-text { font-size: 10px; fill: var(--viz-muted); font-family: var(--font-body); }
+.viz-value-text { font-size: 11px; fill: var(--text); font-family: var(--font-display); font-weight: 800; }
+.viz-grid { stroke: var(--viz-grid); stroke-width: 1; }
+.viz-axis { stroke: var(--viz-axis); stroke-width: 1; }
+.viz-cross { stroke: var(--viz-axis); stroke-width: 1; }
+.viz-ring { stroke: var(--obsidian); stroke-width: 2; }
+.viz-bar { fill: var(--series-1); transition: opacity .12s; }
+.viz-bar.is-dim { opacity: 0.45; }
+.viz-empty { font-size: var(--step--1); color: var(--text-2); padding: 10px 0; }
+
+.hm-cell { cursor: pointer; stroke: transparent; stroke-width: 1.5; }
+.hm-cell.hm-future { fill: none; stroke: var(--viz-grid); stroke-width: 1; cursor: default; }
+.hm-cell.hm-0 { fill: var(--hm-0); } .hm-cell.hm-1 { fill: var(--hm-1); } .hm-cell.hm-2 { fill: var(--hm-2); }
+.hm-cell.hm-3 { fill: var(--hm-3); } .hm-cell.hm-4 { fill: var(--hm-4); }
+.hm-cell:hover, .hm-cell.is-active, .hm-cell:focus-visible { stroke: var(--text); outline: none; }
+.hm-shield { fill: var(--gold); stroke: var(--obsidian); stroke-width: 1; }
+
+.viz-readout { font-size: var(--step--1); color: var(--text); min-height: 22px; margin-top: 10px; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
+.viz-readout-row { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; }
+.viz-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; margin-top: 8px; font-size: var(--step--1); color: var(--text-2); }
+.viz-key { display: inline-flex; align-items: center; gap: 6px; color: var(--text); }
+.viz-legend .viz-key { color: var(--text-2); }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
+.hm-sw-0 { background: var(--hm-0); } .hm-sw-1 { background: var(--hm-1); } .hm-sw-2 { background: var(--hm-2); }
+.hm-sw-3 { background: var(--hm-3); } .hm-sw-4 { background: var(--hm-4); }
+.sw-diamond { display: inline-block; width: 8px; height: 8px; background: var(--gold); transform: rotate(45deg); }
+
+.table-wrap { overflow-x: auto; margin-top: 10px; }
+.viz-table { border-collapse: collapse; width: 100%; font-size: var(--step--1); }
+.viz-table th, .viz-table td { text-align: right; padding: 6px 10px; border-bottom: 1px solid var(--line); }
+.viz-table th:first-child, .viz-table td:first-child { text-align: left; }
+.viz-table th { color: var(--text-2); font-weight: 600; }
+
+.hbars { display: flex; flex-direction: column; gap: 12px; }
+.hbar-row { display: grid; grid-template-columns: minmax(80px, 36%) 1fr 44px; align-items: center; gap: 12px; }
+.hbar-row.count { grid-template-columns: minmax(96px, 34%) 1fr 92px; }
+.hbar-label { font-size: var(--step--1); color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hbar-track { position: relative; height: 10px; background: var(--basalt); border-radius: 5px; }
+:root[data-mode="light"] .hbar-track { background: var(--hm-0); }
+.hbar-fill { height: 100%; border-radius: 0 5px 5px 0; min-width: 0; transition: width .5s var(--ease-out); }
+.hbar-target { position: absolute; top: -4px; width: 2px; height: 18px; background: var(--text-2); }
+.hbar-value { font-size: var(--step--1); text-align: right; color: var(--text); font-family: var(--font-display); font-weight: 800; font-size: 1.05rem; }
+.hbar-value .faint { font-family: var(--font-body); font-weight: 500; font-size: 12px; }
+
+.ledger { list-style: none; margin: 0; padding: 0; }
+.ledger li { padding: 12px 0; border-top: 1px solid var(--line); }
+.ledger li:first-child { border-top: none; padding-top: 0; }
+.ledger-main { display: flex; align-items: center; gap: 12px; }
+.ledger-pct { color: var(--text-2); font-size: var(--step--1); flex: 1; }
+.ledger-note { font-size: var(--step--1); color: var(--text-2); margin-top: 4px; white-space: pre-wrap; }
+.ledger-note.struggle { color: var(--red-text); }

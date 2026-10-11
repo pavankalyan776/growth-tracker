@@ -1,0 +1,93 @@
+/* ==========================================================================
+   Design tokens: "Arise"
+   Colour has a job. Violet = progress & primary action. Cyan = "now" / live.
+   Gold = coins. Red = breaches & destructive. Nothing else gets a hue.
+   ========================================================================== */
+
+:root {
+  /* type */
+  --font-display: "Big Shoulders Display Variable", "Arial Narrow", Impact, sans-serif;
+  --font-body: "Instrument Sans Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --step--1: 0.8125rem;   /* 13 */
+  --step-0: 0.9375rem;    /* 15 */
+  --step-1: 1.125rem;     /* 18 */
+  --step-2: 1.5rem;       /* 24 */
+  --step-3: 2.125rem;     /* 34 */
+  --step-4: 3.25rem;      /* 52 */
+
+  /* space (4px base) */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px; --s8: 72px;
+
+  --cut: 14px;            /* the signature cut corner on big panels */
+  --cut-sm: 8px;
+  --radius: 10px;
+
+  --rail-w: 84px;
+  --topbar-h: 64px;
+  --content-max: 1280px;
+
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* accent (overwritten at runtime from the equipped shop theme) */
+  --accent: #6F4DFF;
+  --accent-text: #A58FFF;
+  --on-accent: #FFFFFF;
+  --accent-glow: rgba(111, 77, 255, 0.30);
+}
+
+/* ---------- Void (dark, default) ---------- */
+:root, :root[data-mode="dark"] {
+  color-scheme: dark;
+  --void: #0A0B1E;
+  --obsidian: #12143A;
+  --basalt: #1C1F52;
+  --line: rgba(150, 160, 255, 0.16);
+  --line-strong: rgba(150, 160, 255, 0.34);
+  --text: #ECEEFF;
+  --text-2: #A9AEDD;
+  --text-3: #8E94CC;
+  --cyan: #36D6FF;
+  --gold: #FFC247;
+  --red: #FF4F6B;
+  --red-text: #FF7A90;
+  --red-tint: rgba(255, 79, 107, 0.12);
+  --gold-tint: rgba(255, 194, 71, 0.12);
+  --cyan-tint: rgba(54, 214, 255, 0.12);
+  --shadow: 0 18px 50px rgba(2, 3, 20, 0.55);
+  --tone: rgba(160, 170, 255, 0.10);      /* screentone dots */
+
+  /* chart palette: five stat hues in fixed order + one violet ramp for magnitude */
+  --cat-1: #4C94F0; --cat-2: #F07A45; --cat-3: #22C58B; --cat-4: #F2B01E; --cat-5: #F08AB4;
+  --series-1: #8A72FF;
+  --viz-grid: rgba(150, 160, 255, 0.14); --viz-axis: rgba(150, 160, 255, 0.34); --viz-muted: #8E94CC;
+  --hm-0: #1C1F52; --hm-1: #3A2F8F; --hm-2: #5B45D6; --hm-3: #8A72FF; --hm-4: #C9BEFF;
+}
+
+/* ---------- Daylight (light) ---------- */
+:root[data-mode="light"] {
+  color-scheme: light;
+  --void: #F2F3FA;
+  --obsidian: #FFFFFF;
+  --basalt: #E8EAF7;
+  --line: rgba(18, 20, 58, 0.12);
+  --line-strong: rgba(18, 20, 58, 0.30);
+  --text: #12143A;
+  --text-2: #4A4F86;
+  --text-3: #5F6496;
+  --cyan: #0A7FA6;
+  --gold: #B27800;
+  --red: #D1264B;
+  --red-text: #C01F44;
+  --red-tint: rgba(209, 38, 75, 0.09);
+  --gold-tint: rgba(178, 120, 0, 0.10);
+  --cyan-tint: rgba(10, 127, 166, 0.10);
+  --shadow: 0 14px 40px rgba(30, 34, 90, 0.14);
+  --tone: rgba(18, 20, 58, 0.09);
+
+  --cat-1: #2a78d6; --cat-2: #eb6834; --cat-3: #1baf7a; --cat-4: #eda100; --cat-5: #e87ba4;
+  --series-1: #5B3FE0;
+  --viz-grid: rgba(18, 20, 58, 0.10); --viz-axis: rgba(18, 20, 58, 0.30); --viz-muted: #5F6496;
+  --hm-0: #E3E5F4; --hm-1: #C9C0FA; --hm-2: #9C88F5; --hm-3: #6F4DFF; --hm-4: #3A22B0;
+}

@@ -1,18 +1,29 @@
 import os
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+
 from dotenv import load_dotenv
+from sqlalchemy import create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 load_dotenv()
 
-# For local dev with no MySQL installed yet, this falls back to a SQLite file
-# so you can start building immediately. In production (or once you have
-# MySQL running), set DATABASE_URL in .env, e.g.:
+
+def _normalize(url: str) -> str:
+    # Railway hands out "mysql://user:pass@host:port/db".
+    # SQLAlchemy needs to be told which driver to use: "mysql+pymysql://".
+    if url.startswith("mysql://"):
+        return url.replace("mysql://", "mysql+pymysql://", 1)
+    return url
+
+
+# Local dev with nothing installed -> SQLite file. In production (Railway) or once
+# you have MySQL locally, set DATABASE_URL (or MYSQL_URL) in .env / the host's variables:
 #   mysql+pymysql://root:yourpassword@localhost:3306/growth_tracker
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./dev.db")
+DATABASE_URL = _normalize(
+    os.getenv("DATABASE_URL") or os.getenv("MYSQL_URL") or "sqlite:///./dev.db"
+)
 
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
-engine = create_engine(DATABASE_URL, connect_args=connect_args)
+engine = create_engine(DATABASE_URL, connect_args=connect_args, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 

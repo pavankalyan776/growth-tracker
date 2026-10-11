@@ -1,5 +1,6 @@
-dev.db
+venv/
 __pycache__/
 *.pyc
 .env
-venv/
+*.db
+.pytest_cache/

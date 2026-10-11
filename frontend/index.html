@@ -1,13 +1,20 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-mode="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <title>Growth Tracker — The System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0A0B1E" />
+    <meta name="description" content="Growth Tracker: clear your daily gate, keep your streak, rank up from E to S." />
+    <title>Growth Tracker</title>
+    <script>
+      // Apply the saved colour mode before first paint so there is no flash of the wrong theme.
+      try {
+        var m = localStorage.getItem("gt-mode") || "dark";
+        if (m === "system") m = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        document.documentElement.setAttribute("data-mode", m);
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

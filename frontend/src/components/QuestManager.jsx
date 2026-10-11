@@ -1,80 +1,112 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
+import Icon from "./icons";
+import { STAT_COLOR, STAT_NAME } from "./charts";
 import { api } from "../api";
+import { useGame } from "../game";
 
 const STAT_KEYS = ["STR", "INT", "PER", "VIT", "AGI"];
 const SECTIONS = [
-  { key: "weekday", title: "Weekdays (Mon–Fri)" },
-  { key: "saturday", title: "Saturday" },
-  { key: "sunday", title: "Sunday" },
+  { key: "weekday", title: "Weekdays", hint: "Monday to Friday" },
+  { key: "saturday", title: "Saturday", hint: "Deep focus and a mock test" },
+  { key: "sunday", title: "Sunday", hint: "Review and rest" },
 ];
 
 function QuestRow({ quest, onChange, onDelete }) {
   const [label, setLabel] = useState(quest.label);
   const [time, setTime] = useState(quest.time_label);
-  const [stat, setStat] = useState(quest.stat);
-
+  const [confirm, setConfirm] = useState(false);
+  const commit = (patch) => onChange(quest.id, patch);
   return (
-    <div className="qrow">
-      <input className="qlabel" type="text" value={label}
-        onChange={(e) => setLabel(e.target.value)}
-        onBlur={() => label !== quest.label && onChange(quest.id, { label })} />
-      <input className="qtime" type="text" value={time}
-        onChange={(e) => setTime(e.target.value)}
-        onBlur={() => time !== quest.time_label && onChange(quest.id, { time_label: time })} />
-      <select className="qstat" value={stat}
-        onChange={(e) => { setStat(e.target.value); onChange(quest.id, { stat: e.target.value }); }}>
-        {STAT_KEYS.map((k) => <option key={k} value={k}>{k}</option>)}
-      </select>
-      <button className="del" title="Delete" onClick={() => onDelete(quest.id, quest.label)}>✕</button>
-    </div>
+    <li className="qrow">
+      <span className="qrow-stat" style={{ background: STAT_COLOR[quest.stat] }} aria-hidden="true" />
+      <div className="field qf-label"><label htmlFor={`l-${quest.id}`}>Quest</label>
+        <input id={`l-${quest.id}`} className="input" value={label} maxLength={200} onChange={(e) => setLabel(e.target.value)}
+          onBlur={() => label.trim() && label !== quest.label && commit({ label: label.trim() })} /></div>
+      <div className="field qf-time"><label htmlFor={`t-${quest.id}`}>Time block</label>
+        <input id={`t-${quest.id}`} className="input" value={time} maxLength={50} onChange={(e) => setTime(e.target.value)}
+          onBlur={() => time.trim() && time !== quest.time_label && commit({ time_label: time.trim() })} /></div>
+      <div className="field qf-stat"><label htmlFor={`s-${quest.id}`}>Trains</label>
+        <select id={`s-${quest.id}`} className="select" value={quest.stat} onChange={(e) => commit({ stat: e.target.value })}>
+          {STAT_KEYS.map((k) => <option key={k} value={k}>{STAT_NAME[k]}</option>)}
+        </select></div>
+      <div className="qf-del">
+        {confirm ? (
+          <span className="row">
+            <button type="button" className="btn danger sm" onClick={() => onDelete(quest.id)}>Delete</button>
+            <button type="button" className="btn ghost sm" onClick={() => setConfirm(false)}>Keep</button>
+          </span>
+        ) : (
+          <button type="button" className="icon-btn" onClick={() => setConfirm(true)} aria-label={`Delete ${quest.label}`}><Icon name="trash" /></button>
+        )}
+      </div>
+    </li>
   );
 }
 
-export default function QuestManager({ onDataChanged }) {
-  const [templates, setTemplates] = useState({ weekday: [], saturday: [], sunday: [] });
+export default function QuestManager() {
+  const { refresh, toast } = useGame();
+  const [tab, setTab] = useState("weekday");
+  const [all, setAll] = useState(null);
+  const [draft, setDraft] = useState({ label: "", time_label: "", stat: "VIT" });
+  const [busy, setBusy] = useState(false);
 
-  const load = useCallback(() => {
-    Promise.all(SECTIONS.map((s) => api.getQuests(s.key))).then(([weekday, saturday, sunday]) => {
-      setTemplates({ weekday, saturday, sunday });
-    });
-  }, []);
-
+  const load = useCallback(() => api.getQuests().then(setAll).catch((e) => toast({ icon: "alert", title: "Couldn't load quests", body: e.message })), [toast]);
   useEffect(() => { load(); }, [load]);
 
-  const handleUpdate = async (id, patch) => {
-    await api.updateQuest(id, patch);
-    onDataChanged();
+  const change = async (id, patch) => {
+    try { await api.updateQuest(id, patch); await load(); await refresh(); }
+    catch (e) { toast({ icon: "alert", title: "Couldn't save", body: e.message }); load(); }
+  };
+  const remove = async (id) => {
+    try { await api.deleteQuest(id); await load(); await refresh(); toast({ icon: "trash", title: "Quest deleted" }); }
+    catch (e) { toast({ icon: "alert", title: "Couldn't delete", body: e.message }); }
+  };
+  const add = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await api.createQuest({ day_type: tab, label: draft.label.trim(), time_label: draft.time_label.trim() || "All day", stat: draft.stat });
+      setDraft({ label: "", time_label: "", stat: draft.stat });
+      await load(); await refresh();
+      toast({ icon: "check", title: "Quest added" });
+    } catch (err) { toast({ icon: "alert", title: "Couldn't add quest", body: err.message }); }
+    setBusy(false);
   };
 
-  const handleDelete = async (id, label) => {
-    if (!confirm(`Delete "${label}"? Past completions for it will no longer be shown.`)) return;
-    await api.deleteQuest(id);
-    load();
-    onDataChanged();
-  };
-
-  const handleAdd = async (dayType) => {
-    await api.createQuest({ day_type: dayType, label: "New quest", time_label: "—", stat: "VIT" });
-    load();
-    onDataChanged();
-  };
+  const section = SECTIONS.find((s) => s.key === tab);
+  const rows = all ? all.filter((q) => q.day_type === tab) : null;
 
   return (
-    <section>
-      <div className="panel-head"><h2>Manage quests</h2></div>
-      <div className="hint">Edit label, time, and the stat each quest trains. Changes apply to every day of that type, past and future.</div>
-
-      {SECTIONS.map((sec) => (
-        <div className="qsection" key={sec.key}>
-          <h3>{sec.title}</h3>
-          {templates[sec.key].map((q) => (
-            <QuestRow key={q.id} quest={q} onChange={handleUpdate} onDelete={handleDelete} />
+    <div className="stack">
+      <section className="panel sm row wrap">
+        <div className="seg" role="tablist" aria-label="Day type">
+          {SECTIONS.map((s) => (
+            <button key={s.key} type="button" role="tab" aria-selected={tab === s.key} onClick={() => setTab(s.key)}>
+              {s.title}{all ? ` (${all.filter((q) => q.day_type === s.key).length})` : ""}
+            </button>
           ))}
-          <div className="add-row">
-            <button type="button" onClick={() => handleAdd(sec.key)}>+ Add quest</button>
-          </div>
         </div>
-      ))}
-    </section>
+        <p className="small muted grow">Edits apply to every {section.title.toLowerCase().replace("weekdays", "weekday")}, past and future. Deleting a quest also removes its history.</p>
+      </section>
+
+      <section className="panel">
+        <div className="panel-head"><h3 className="panel-title">{section.title}</h3><span className="panel-sub">{section.hint}</span></div>
+        {!rows ? <div className="stack">{[0, 1, 2].map((i) => <div key={i} className="skel" style={{ height: 64 }} />)}</div>
+          : rows.length === 0 ? <div className="empty"><div className="display">No quests yet</div>Add your first {section.title.toLowerCase()} quest below.</div>
+          : <ul className="qlist">{rows.map((q) => <QuestRow key={`${q.id}-${q.label}-${q.time_label}`} quest={q} onChange={change} onDelete={remove} />)}</ul>}
+      </section>
+
+      <form className="panel sm qadd" onSubmit={add}>
+        <div className="field qf-label"><label htmlFor="nq-label">New quest</label>
+          <input id="nq-label" className="input" value={draft.label} maxLength={200} onChange={(e) => setDraft({ ...draft, label: e.target.value })} placeholder="Read 20 pages" /></div>
+        <div className="field qf-time"><label htmlFor="nq-time">Time block</label>
+          <input id="nq-time" className="input" value={draft.time_label} maxLength={50} onChange={(e) => setDraft({ ...draft, time_label: e.target.value })} placeholder="9:30 – 10:00 PM" /></div>
+        <div className="field qf-stat"><label htmlFor="nq-stat">Trains</label>
+          <select id="nq-stat" className="select" value={draft.stat} onChange={(e) => setDraft({ ...draft, stat: e.target.value })}>
+            {STAT_KEYS.map((k) => <option key={k} value={k}>{STAT_NAME[k]}</option>)}
+          </select></div>
+        <div className="qf-del"><button type="submit" className="btn" disabled={busy || !draft.label.trim()}><Icon name="plus" className="sm" />Add quest</button></div>
+      </form>
+    </div>
   );
 }
